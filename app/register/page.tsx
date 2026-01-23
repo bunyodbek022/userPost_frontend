@@ -14,19 +14,32 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // Barcha inputlar uchun umumiy handle funksiyasi
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Oddiy validatsiya
+    if (formData.password.length < 6) {
+      return alert("Parol kamida 6 ta belgidan iborat bo'lishi kerak!");
+    }
+
     setLoading(true);
 
-    // Backend-ga yuborishdan oldin yoshni raqamga o'tkazamiz
     const dataToSend = {
       ...formData,
       age: Number(formData.age)
     };
 
     try {
-      await axios.post('http://localhost:3000/users/register', dataToSend);
-      alert("Muvaffaqiyatli ro'yxatdan o'tdingiz! Endi tizimga kiring.");
+      // API manzili environment variable'dan olinishi tavsiya etiladi
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+      await axios.post(`${API_URL}/users/register`, dataToSend);
+      
+      alert("Muvaffaqiyatli ro'yxatdan o'tdingiz!");
       router.push('/login');
     } catch (err: any) {
       alert(err.response?.data?.message || "Xatolik yuz berdi!");
@@ -40,57 +53,57 @@ export default function Register() {
       <div className="w-full max-w-md bg-white/90 backdrop-blur-md p-10 rounded-3xl shadow-2xl transform transition-all hover:scale-[1.01]">
         <div className="text-center mb-8">
           <h2 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
-            Hush kelibsiz!
+            Xush kelibsiz!
           </h2>
           <p className="text-gray-500 mt-2">O'z blogingizni yaratish uchun ro'yxatdan o'ting</p>
         </div>
 
         <form onSubmit={handleRegister} className="space-y-5">
-          {/* User Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 ml-1">Foydalanuvchi nomi</label>
             <input 
               required
+              name="userName"
               type="text" 
               placeholder="Masalan: johndoe" 
               className="w-full p-3.5 mt-1 border-none bg-gray-100 rounded-xl focus:ring-2 focus:ring-purple-400 outline-none transition"
-              onChange={(e) => setFormData({...formData, userName: e.target.value})}
+              onChange={handleChange}
             />
           </div>
 
-          {/* Age */}
           <div>
             <label className="block text-sm font-medium text-gray-700 ml-1">Yoshingiz</label>
             <input 
               required
+              name="age"
               type="number" 
               placeholder="Masalan: 25" 
               className="w-full p-3.5 mt-1 border-none bg-gray-100 rounded-xl focus:ring-2 focus:ring-purple-400 outline-none transition"
-              onChange={(e) => setFormData({...formData, age: e.target.value})}
+              onChange={handleChange}
             />
           </div>
 
-          {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 ml-1">Email manzili</label>
             <input 
               required
+              name="email"
               type="email" 
               placeholder="john@example.com" 
               className="w-full p-3.5 mt-1 border-none bg-gray-100 rounded-xl focus:ring-2 focus:ring-purple-400 outline-none transition"
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              onChange={handleChange}
             />
           </div>
 
-          {/* Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700 ml-1">Maxfiy parol</label>
             <input 
               required
+              name="password"
               type="password" 
               placeholder="Kamida 6 ta belgi" 
               className="w-full p-3.5 mt-1 border-none bg-gray-100 rounded-xl focus:ring-2 focus:ring-purple-400 outline-none transition"
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
+              onChange={handleChange}
             />
           </div>
 
@@ -99,7 +112,15 @@ export default function Register() {
             disabled={loading}
             className={`w-full py-4 mt-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl shadow-lg hover:shadow-purple-500/50 transition-all active:scale-95 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {loading ? "Yuborilmoqda..." : "Ro'yxatdan o'tish"}
+            {loading ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin h-5 w-5 mr-3 text-white" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                Yuborilmoqda...
+              </span>
+            ) : "Ro'yxatdan o'tish"}
           </button>
         </form>
 

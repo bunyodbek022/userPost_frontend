@@ -21,7 +21,8 @@ export default function CreatePost() {
     setLoading(true);
     try {
       // Swagger: POST /posts
-      await axios.post('http://localhost:3000/posts', { title, content });
+       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+      await axios.post(`${API_URL}/posts`, { title, content });
       router.push('/feed'); // Chop etilgach Feed'ga qaytish
     } catch (err) {
       alert("Postni chop etishda xatolik yuz berdi. Tizimga kirganingizni tekshiring.");

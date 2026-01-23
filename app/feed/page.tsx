@@ -4,6 +4,9 @@ import axios from 'axios';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+// Base URL ni .env fayldan olamiz, agar u bo'lmasa default production manzilni ishlatamiz
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://bunyodbek.me/api';
+
 axios.defaults.withCredentials = true;
 
 const TOPICS = ["All", "Programming", "Technology", "Design", "AI", "Startup", "Career"];
@@ -23,22 +26,25 @@ export default function Feed() {
     try {
       setLoading(true);
       
-      // 1. Tizimga kirgan foydalanuvchi profilini olish (Sidebar uchun)
-      const userRes = await axios.get('http://localhost:3000/users/profile');
-      if (userRes.data.success) {
-        setCurrentUser(userRes.data.data);
+      // 1. Tizimga kirgan foydalanuvchi profilini olish
+      try {
+        const userRes = await axios.get(`${API_BASE}/users/profile`);
+        // NestJS response formatiga qarab (data.data yoki data)
+        const userData = userRes.data.data || userRes.data;
+        setCurrentUser(userData);
+      } catch (userErr) {
+        console.warn("Profil yuklashda xato (ehtimol login qilinmagan):", userErr);
       }
 
-      // 2. Barcha postlarni olish (Lenta uchun)
-      const postsRes = await axios.get('http://localhost:3000/posts');
-      // Response formatiga qarab: postsRes.data yoki postsRes.data.data
+      // 2. Barcha postlarni olish
+      const postsRes = await axios.get(`${API_BASE}/posts`);
       const allPosts = Array.isArray(postsRes.data) ? postsRes.data : postsRes.data.data || [];
       const reversedPosts = [...allPosts].reverse();
       
       setPosts(reversedPosts);
       setFilteredPosts(reversedPosts);
     } catch (err) {
-      console.error("Ma'lumot yuklashda xato:", err);
+      console.error("Ma'lumot yuklashda umumiy xato:", err);
     } finally {
       setLoading(false);
     }
@@ -54,7 +60,8 @@ export default function Feed() {
       setFilteredPosts(posts);
     } else {
       const filtered = posts.filter(post => 
-        post.title?.toLowerCase().includes(selectedTopic.toLowerCase())
+        post.title?.toLowerCase().includes(selectedTopic.toLowerCase()) ||
+        post.content?.toLowerCase().includes(selectedTopic.toLowerCase())
       );
       setFilteredPosts(filtered);
     }
@@ -62,9 +69,12 @@ export default function Feed() {
 
   const handleLogout = async () => {
     try {
-      await axios.post('http://localhost:3000/users/logout');
+      await axios.post(`${API_BASE}/users/logout`);
       router.push('/login');
-    } catch { router.push('/login'); }
+    } catch (err) {
+      console.error("Logout xatosi:", err);
+      router.push('/login'); 
+    }
   };
 
   return (
@@ -100,11 +110,11 @@ export default function Feed() {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3 min-w-0">
                 <div className="w-10 h-10 rounded-full bg-black text-white flex-shrink-0 flex items-center justify-center font-bold text-sm">
-                  {currentUser?.userName?.charAt(0).toUpperCase() || "U"}
+                  {currentUser?.userName?.charAt(0).toUpperCase() || currentUser?.email?.charAt(0).toUpperCase() || "U"}
                 </div>
                 <div className="flex flex-col min-w-0">
                   <span className="text-sm font-black truncate text-black leading-none mb-1">
-                    {currentUser?.userName || "Loading..."}
+                    {currentUser?.userName || "Guest"}
                   </span>
                   <span className="text-[10px] text-green-600 font-bold uppercase tracking-wider">Online</span>
                 </div>
@@ -133,7 +143,7 @@ export default function Feed() {
               <span className="text-sm font-medium">Write</span>
             </Link>
             <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold ring-2 ring-gray-50">
-               {currentUser?.userName?.charAt(0).toUpperCase() || "D"}
+               {currentUser?.userName?.charAt(0).toUpperCase() || "U"}
             </div>
           </div>
         </header>
@@ -158,20 +168,24 @@ export default function Feed() {
               <div className="space-y-8 animate-pulse">
                 {[1,2,3].map(i => <div key={i} className="h-40 bg-gray-50 rounded-3xl w-full"></div>)}
               </div>
+            ) : filteredPosts.length === 0 ? (
+              <div className="text-center py-20">
+                 <p className="text-gray-400">No stories found for this topic.</p>
+              </div>
             ) : filteredPosts.map(post => (
               <article key={post._id} className="group cursor-pointer">
                 <div className="flex items-center space-x-2 mb-3">
                   <div className="w-6 h-6 rounded-full bg-gray-900 text-white flex items-center justify-center text-[10px] font-bold">
-                    {post.author?.userName?.charAt(0).toUpperCase()}
+                    {post.author?.userName?.charAt(0).toUpperCase() || "A"}
                   </div>
-                  <span className="text-xs font-bold text-black">{post.author?.userName}</span>
+                  <span className="text-xs font-bold text-black">{post.author?.userName || "Anonymous"}</span>
                 </div>
                 
                 <Link href={`/posts/${post._id}`} className="grid grid-cols-1 md:grid-cols-12 gap-6">
                   <div className="md:col-span-8">
                     <h2 className="text-2xl font-black mb-2 group-hover:underline decoration-2 underline-offset-4">{post.title}</h2>
                     <p className="text-gray-500 line-clamp-2 text-sm leading-relaxed mb-4">
-                      {post.content || "Fascinating story about " + post.title + ". Explore the latest insights and developments in this deep dive..."}
+                      {post.content || "Fascinating story. Explore the latest insights and developments in this deep dive..."}
                     </p>
                     <div className="flex items-center space-x-3 text-[11px] text-gray-400 font-medium">
                       <span className="bg-gray-100 px-2 py-1 rounded-full text-black">Technology</span>

@@ -4,6 +4,9 @@ import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://bunyodbek.me/api';
+
 // Cookie bilan ishlash uchun (backend bilan sessiyani saqlash)
 axios.defaults.withCredentials = true;
 
@@ -20,7 +23,7 @@ export default function Login() {
 
     try {
       // Backend: POST /users/login
-      await axios.post('http://localhost:3000/users/login', formData);
+      await axios.post(`${API_BASE}/users/login`, formData);
       
       // Muvaffaqiyatli kirgach, Foydalanuvchini Feed (Maqolalar) sahifasiga yuboramiz
       router.push('/feed'); 
