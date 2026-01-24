@@ -1,0 +1,36 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script_stop: true
+          script: |
+            # 1. Frontend kodini yangilaymiz
+            cd /root/devstories-frontend
+            git fetch origin main
+            git reset --hard origin/main
+            
+            # 2. Backend papkasiga (docker-compose joylashgan yerga) o'tamiz
+            cd /root/devstories-backend
+            
+            echo "Rebuilding Frontend container..."
+            # Faqat frontendni build qilamiz
+            docker compose build frontend
+            docker compose up -d frontend
+            
+            docker image prune -f

@@ -6,7 +6,6 @@ import Link from 'next/link';
 
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://bunyodbek.me/api';
-
 // Cookie bilan ishlash uchun (backend bilan sessiyani saqlash)
 axios.defaults.withCredentials = true;
 

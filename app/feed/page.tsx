@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 
 // Base URL ni .env fayldan olamiz, agar u bo'lmasa default production manzilni ishlatamiz
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://bunyodbek.me/api';
-
 axios.defaults.withCredentials = true;
 
 const TOPICS = ["All", "Programming", "Technology", "Design", "AI", "Startup", "Career"];
