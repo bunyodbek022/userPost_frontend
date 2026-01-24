@@ -21,12 +21,12 @@ jobs:
           script_stop: true
           script: |
             # 1. Frontend kodini yangilaymiz
-            cd /root/devstories-frontend
+            cd root/var/www/devStories/frontend
             git fetch origin main
             git reset --hard origin/main
             
             # 2. Backend papkasiga (docker-compose joylashgan yerga) o'tamiz
-            cd /root/devstories-backend
+            cd root/var/www/devStories/backend
             
             echo "Rebuilding Frontend container..."
             # Faqat frontendni build qilamiz
