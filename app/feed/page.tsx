@@ -19,7 +19,7 @@ export default function Feed() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
       // 1. Profil va Kategoriyalar va Postlarni bir vaqtda olish
       const [userRes, postsRes, catsRes] = await Promise.allSettled([
         axios.get(`${API_BASE}/users/profile`),
@@ -51,24 +51,21 @@ export default function Feed() {
 
   // Like bosish funksiyasi
   const handleLike = async (e: React.MouseEvent, postId: string) => {
-  e.preventDefault(); 
-  e.stopPropagation(); // Link otib ketishini to'xtatadi
-  
-  if (!currentUser) return alert("Avval login qiling!");
-  
-  try {
-    // 1. Backendga so'rov yuborish
-    const res = await axios.post(`${API_BASE}/posts/${postId}/like`);
-    const updatedPost = res.data.data || res.data; // Backenddan qaytgan yangi post
+    e.preventDefault();
+    e.stopPropagation();
 
-    // 2. State-ni yangilash (Like soni va rangini darhol ko'rsatish uchun)
-    setPosts(prevPosts => prevPosts.map(p => 
-      p._id === postId ? updatedPost : p
-    ));
-  } catch (err) {
-    console.error("Like xatosi:", err);
-  }
-};
+    try {
+      const res = await axios.post(`${API_BASE}/posts/${postId}/like`);
+
+      const updatedPost = res.data.data || res.data;
+
+      setPosts(prevPosts => {
+        return prevPosts.map(p => (p._id === postId ? updatedPost : p));
+      });
+    } catch (err) {
+      console.error("Like error:", err);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -78,38 +75,38 @@ export default function Feed() {
   };
 
   // Filtrlash logikasi (Kategoriyalar bo'yicha)
-  const filteredPosts = selectedTopic === "All" 
-    ? posts 
+  const filteredPosts = selectedTopic === "All"
+    ? posts
     : posts.filter(post => post.categories?.some((c: any) => c.name === selectedTopic));
 
   return (
     <div className="min-h-screen bg-white text-black flex overflow-x-hidden">
-      
+
       {/* --- SIDEBAR (O'zgarishsiz qoldi) --- */}
       <aside className={`fixed inset-y-0 left-0 z-[60] w-[280px] bg-white border-r border-gray-100 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 lg:translate-x-0`}>
         <div className="flex flex-col h-full">
           <div className="p-6 flex items-center justify-between border-b border-gray-50">
             <span className="text-2xl font-black italic tracking-tighter">DevStories</span>
             <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-gray-400">
-               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
 
           <nav className="flex-1 p-6 space-y-4">
             <Link href="/feed" className="flex items-center space-x-4 text-black font-bold p-2 bg-gray-50 rounded-xl">
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" /></svg>
               <span className="text-lg">Home</span>
             </Link>
-            
+
             {currentUser?.role === 'admin' && (
               <Link href="/admin" className="flex items-center space-x-4 text-purple-600 hover:bg-purple-50 p-2 rounded-xl transition font-bold border border-purple-100">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
                 <span className="text-lg">Dashboard</span>
               </Link>
             )}
 
             <Link href="/profile" className="flex items-center space-x-4 text-gray-400 hover:text-black hover:bg-gray-50 p-2 rounded-xl transition">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
               <span className="text-lg">Profile</span>
             </Link>
           </nav>
@@ -130,7 +127,7 @@ export default function Feed() {
                 </div>
               </div>
               <button onClick={handleLogout} className="p-2 text-gray-400 hover:text-red-600 transition">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
               </button>
             </div>
           </div>
@@ -142,7 +139,7 @@ export default function Feed() {
         <header className="py-4 px-6 border-b border-gray-50 sticky top-0 bg-white/80 backdrop-blur-md z-40 flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-1 hover:bg-gray-100 rounded-lg">
-              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="1.5" d="M4 6h16M4 12h16M4 18h16"/></svg>
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="1.5" d="M4 6h16M4 12h16M4 18h16" /></svg>
             </button>
             <span className="text-2xl font-black italic tracking-tighter">Feed</span>
           </div>
@@ -156,16 +153,16 @@ export default function Feed() {
         <main className="max-w-4xl mx-auto px-6 py-10">
           {/* Topics bar - Dinamik Kategoriyalar */}
           <div className="flex items-center space-x-6 border-b border-gray-100 mb-10 overflow-x-auto pb-4 scrollbar-hide">
-            <button 
-              onClick={() => setSelectedTopic("All")} 
+            <button
+              onClick={() => setSelectedTopic("All")}
               className={`text-sm whitespace-nowrap pb-2 transition-all ${selectedTopic === "All" ? 'border-b-2 border-black font-bold text-black' : 'text-gray-400 hover:text-black'}`}
             >
               All
             </button>
             {categories.map(cat => (
-              <button 
-                key={cat._id} 
-                onClick={() => setSelectedTopic(cat.name)} 
+              <button
+                key={cat._id}
+                onClick={() => setSelectedTopic(cat.name)}
                 className={`text-sm whitespace-nowrap pb-2 transition-all ${selectedTopic === cat.name ? 'border-b-2 border-black font-bold text-black' : 'text-gray-400 hover:text-black'}`}
               >
                 {cat.name}
@@ -177,12 +174,14 @@ export default function Feed() {
           <div className="space-y-16">
             {loading ? (
               <div className="space-y-8 animate-pulse">
-                {[1,2,3].map(i => <div key={i} className="h-40 bg-gray-50 rounded-3xl w-full"></div>)}
+                {[1, 2, 3].map(i => <div key={i} className="h-40 bg-gray-50 rounded-3xl w-full"></div>)}
               </div>
             ) : filteredPosts.length === 0 ? (
               <div className="text-center py-20"><p className="text-gray-400">No stories found in this category.</p></div>
             ) : filteredPosts.map(post => {
-              const isLiked = post.likes?.includes(currentUser?._id);
+              const isLiked = post.likes?.some((id: any) =>
+                (id._id || id) === (currentUser?._id || currentUser?.id)
+              );
               return (
                 <article key={post._id} className="group cursor-pointer">
                   <div className="flex items-center space-x-2 mb-3">
@@ -190,18 +189,18 @@ export default function Feed() {
                       {post.author?.userName?.charAt(0).toUpperCase() || "A"}
                     </div>
                     <span className="text-xs font-bold text-black">
-                      {post.author?.userName || "Anonymous"} 
+                      {post.author?.userName || "Anonymous"}
                       {post.author?.role === 'admin' && <span className="ml-1 text-purple-600">✓</span>}
                     </span>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                     <div className="md:col-span-8">
                       <Link href={`/posts/${post._id}`}>
                         <h2 className="text-2xl font-black mb-2 group-hover:underline decoration-2 underline-offset-4">{post.title}</h2>
                         <p className="text-gray-500 line-clamp-2 text-sm leading-relaxed mb-4">{post.content}</p>
                       </Link>
-                      
+
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3 text-[11px] font-medium">
                           {post.categories?.map((c: any) => (
@@ -211,7 +210,7 @@ export default function Feed() {
                         </div>
 
                         {/* LIKE BUTTON */}
-                        <button 
+                        <button
                           onClick={(e) => handleLike(e, post._id)}
                           className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full transition-all ${isLiked ? 'bg-pink-50 text-pink-600' : 'text-gray-400 hover:bg-gray-50'}`}
                         >
@@ -224,7 +223,7 @@ export default function Feed() {
                     </div>
                     <div className="md:col-span-4 hidden md:block">
                       <div className="w-full h-32 bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100">
-                         <svg className="w-10 h-10 text-gray-200" fill="currentColor" viewBox="0 0 20 20"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"/></svg>
+                        <svg className="w-10 h-10 text-gray-200" fill="currentColor" viewBox="0 0 20 20"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" /></svg>
                       </div>
                     </div>
                   </div>
