@@ -1,187 +1,212 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://bunyodbek.me/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 axios.defaults.withCredentials = true;
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState<any[]>([]);
-  const [posts, setPosts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
-  const [newCat, setNewCat] = useState("");
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'users' | 'posts' | 'categories'>('users');
-  const router = useRouter();
+  
+  // Kategoriya uchun state-lar
+  const [newCat, setNewCat] = useState('');
+  const [editingCatId, setEditingCatId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
 
-  useEffect(() => {
-    const initAdmin = async () => {
-      try {
-        const profileRes = await axios.get(`${API_BASE}/users/profile`);
-        const user = profileRes.data.data || profileRes.data;
-        if (user.role !== 'admin') {
-          router.push('/feed');
-          return;
-        }
-        await loadAllData();
-      } catch (err) {
-        router.push('/login');
-      } finally {
-        setLoading(false);
-      }
-    };
-    initAdmin();
-  }, []);
-
-  const loadAllData = async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const [uRes, pRes, cRes] = await Promise.all([
+      setLoading(true);
+      const [uRes, cRes] = await Promise.all([
         axios.get(`${API_BASE}/users`),
-        axios.get(`${API_BASE}/posts/admin/all`), // Barcha postlar (active/inactive)
         axios.get(`${API_BASE}/categories`)
       ]);
-      setUsers(uRes.data.data || uRes.data);
-      setPosts(pRes.data.data || pRes.data);
-      setCategories(cRes.data.data || cRes.data);
-    } catch (err) { console.error("Ma'lumot yuklashda xato"); }
-  };
-
-  // --- USER ACTIONS ---
-  const toggleUserRole = async (userId: string, currentRole: string) => {
-    const newRole = currentRole === 'admin' ? 'user' : 'admin';
-    await axios.patch(`${API_BASE}/users/${userId}`, { role: newRole });
-    loadAllData();
-  };
-
-  const deleteUser = async (id: string) => {
-    if (confirm("Foydalanuvchini o'chirmoqchimisiz?")) {
-      await axios.delete(`${API_BASE}/users/${id}`);
-      loadAllData();
+      setUsers(uRes.data.data || uRes.data || []);
+      setCategories(cRes.data.data || cRes.data || []);
+    } catch (err) {
+      console.error("Ma'lumot yuklashda xato:", err);
+    } finally {
+      setLoading(false);
     }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // --- KATEGORIYA AMALLARI ---
+  const handleCreateCategory = async () => {
+    if (!newCat.trim()) return;
+    try {
+      await axios.post(`${API_BASE}/categories`, { name: newCat });
+      setNewCat('');
+      fetchData();
+    } catch (err) { alert("Xato!"); }
   };
 
-  // --- POST ACTIONS ---
-  const togglePostStatus = async (postId: string, currentStatus: boolean) => {
-    await axios.patch(`${API_BASE}/posts/${postId}/status`, { isActive: !currentStatus });
-    loadAllData();
+  const handleUpdateCategory = async (id: string) => {
+    try {
+      await axios.patch(`${API_BASE}/categories/${id}`, { name: editName });
+      setEditingCatId(null);
+      fetchData();
+    } catch (err) { alert("Yangilashda xato!"); }
   };
 
-  const deletePost = async (id: string) => {
-    if (confirm("Postni o'chirmoqchimisiz?")) {
-      await axios.delete(`${API_BASE}/posts/${id}`);
-      loadAllData();
-    }
+  const handleDeleteCategory = async (id: string) => {
+    if (!confirm("Ushbu kategoriyani o'chirmoqchimisiz?")) return;
+    try {
+      await axios.delete(`${API_BASE}/categories/${id}`);
+      fetchData();
+    } catch (err) { alert("O'chirishda xato!"); }
   };
 
-  // --- CATEGORY ACTIONS ---
-  const createCategory = async () => {
-    if (!newCat) return;
-    await axios.post(`${API_BASE}/categories`, { name: newCat });
-    setNewCat("");
-    loadAllData();
-  };
-
-  if (loading) return <div className="p-10 text-center font-black">YUKLANMOQDA...</div>;
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="animate-bounce text-2xl font-black italic tracking-tighter">Admin Panel Loading...</div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-[#f4f4f4] text-black font-sans p-4 md:p-10">
-      <div className="max-w-7xl mx-auto">
-        <header className="flex justify-between items-end mb-10">
+    <div className="min-h-screen bg-gray-50 flex font-sans">
+      
+      {/* SIDEBAR */}
+      <aside className="w-72 bg-black text-white p-8 hidden lg:flex flex-col sticky top-0 h-screen">
+        <div className="mb-12">
+          <span className="text-2xl font-black tracking-tighter italic">DevStories</span>
+          <p className="text-[10px] text-gray-500 font-bold tracking-widest uppercase mt-2">Admin Dashboard</p>
+        </div>
+        <nav className="flex-1 space-y-2">
+          <Link href="/admin" className="flex items-center space-x-3 bg-white/10 p-4 rounded-2xl font-bold">
+             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+             <span>Overview</span>
+          </Link>
+          <Link href="/feed" className="flex items-center space-x-3 text-gray-400 p-4 rounded-2xl hover:bg-white/5 transition font-bold">
+             <span>Site View</span>
+          </Link>
+        </nav>
+        <div className="pt-8 border-t border-white/10">
+          <Link href="/profile" className="text-sm font-bold text-gray-500 hover:text-white transition underline underline-offset-4">My Profile</Link>
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT */}
+      <main className="flex-1 p-6 lg:p-12 overflow-y-auto">
+        
+        <header className="flex justify-between items-end mb-12">
           <div>
-            <h1 className="text-6xl font-black italic tracking-tighter">ADMIN <span className="text-purple-600">PRO</span></h1>
-            <p className="text-gray-400 font-bold text-xs mt-2 uppercase tracking-[0.3em]">Management Console</p>
+            <h1 className="text-5xl font-black tracking-tighter text-black">Dashboard</h1>
+            <p className="text-gray-400 font-medium mt-2">Xush kelibsiz, Admin. Tizim to'liq nazorat ostida.</p>
           </div>
-          <Link href="/feed" className="bg-black text-white px-10 py-4 rounded-full font-black text-xs hover:scale-105 transition-all">FEEDGA QAYTISH</Link>
+          <div className="hidden sm:flex space-x-4">
+             <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm text-center min-w-[120px]">
+                <p className="text-[10px] font-black text-gray-400 uppercase">Users</p>
+                <p className="text-2xl font-black">{users.length}</p>
+             </div>
+             <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm text-center min-w-[120px]">
+                <p className="text-[10px] font-black text-gray-400 uppercase">Categories</p>
+                <p className="text-2xl font-black">{categories.length}</p>
+             </div>
+          </div>
         </header>
 
-        {/* Tab switcher */}
-        <div className="flex gap-4 mb-8">
-          {['users', 'posts', 'categories'].map((tab: any) => (
-            <button key={tab} onClick={() => setActiveTab(tab)} className={`px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-purple-600 text-white shadow-xl shadow-purple-200' : 'bg-white text-gray-400 hover:text-black'}`}>
-              {tab} ({tab === 'users' ? users.length : tab === 'posts' ? posts.length : categories.length})
-            </button>
-          ))}
-        </div>
-
-        <div className="bg-white rounded-[3rem] shadow-2xl shadow-gray-200/50 overflow-hidden border border-gray-100">
-          {/* USERS TABLE */}
-          {activeTab === 'users' && (
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-400">
-                <tr>
-                  <th className="p-8">User</th>
-                  <th className="p-8">Role</th>
-                  <th className="p-8 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {users.map(u => (
-                  <tr key={u._id} className="hover:bg-gray-50/50 transition">
-                    <td className="p-8">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-black text-white flex items-center justify-center font-black">{u.userName?.charAt(0)}</div>
-                        <div><p className="font-black text-lg">{u.userName}</p><p className="text-xs text-gray-400">{u.email}</p></div>
-                      </div>
-                    </td>
-                    <td className="p-8">
-                      <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase ${u.role === 'admin' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}`}>{u.role}</span>
-                    </td>
-                    <td className="p-8 text-right space-x-2">
-                      <button onClick={() => toggleUserRole(u._id, u.role)} className="text-[10px] font-black uppercase underline">Role</button>
-                      <button onClick={() => deleteUser(u._id)} className="text-[10px] font-black uppercase text-red-500 underline">Delete</button>
-                    </td>
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+          
+          {/* 1. USERS LIST - 7/12 width */}
+          <section className="xl:col-span-7 bg-white rounded-[32px] p-8 shadow-sm border border-gray-100">
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-8">System Users</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-gray-50 text-[10px] font-black uppercase text-gray-300">
+                    <th className="pb-4">Username</th>
+                    <th className="pb-4">Role</th>
+                    <th className="pb-4 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-
-          {/* POSTS MANAGEMENT */}
-          {activeTab === 'posts' && (
-            <div className="p-8 space-y-4">
-              {posts.map(p => (
-                <div key={p._id} className="flex justify-between items-center bg-gray-50 p-6 rounded-[2rem] border border-transparent hover:border-purple-100 transition">
-                  <div>
-                    <h3 className="font-black text-xl">{p.title}</h3>
-                    <p className="text-xs text-gray-400 mt-1">Muallif: <span className="text-black font-bold">{p.author?.userName}</span></p>
-                    <div className="flex gap-2 mt-3">
-                      {p.categories?.map((c: any) => (
-                        <span key={c._id} className="text-[9px] font-black bg-white px-2 py-1 rounded-md border border-gray-100 uppercase tracking-tighter">#{c.name}</span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex gap-4">
-                    <button onClick={() => togglePostStatus(p._id, p.isActive)} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase ${p.isActive ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
-                      {p.isActive ? 'Active' : 'Pending'}
-                    </button>
-                    <button onClick={() => deletePost(p._id)} className="bg-red-500 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase">Delete</button>
-                  </div>
-                </div>
-              ))}
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {users.map(user => (
+                    <tr key={user._id} className="group hover:bg-gray-50/50 transition">
+                      <td className="py-5">
+                        <div className="flex items-center space-x-3">
+                           <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-[10px] font-black">
+                             {user.userName?.charAt(0).toUpperCase()}
+                           </div>
+                           <span className="font-bold text-gray-800">{user.userName}</span>
+                        </div>
+                      </td>
+                      <td className="py-5">
+                         <span className={`text-[9px] font-black uppercase px-2 py-1 rounded ${user.role === 'admin' ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-500'}`}>
+                           {user.role}
+                         </span>
+                      </td>
+                      <td className="py-5 text-right">
+                        <Link href={`/profile/${user._id}`} className="bg-black text-white text-[10px] font-black px-4 py-2 rounded-full hover:bg-gray-800 transition">
+                          VIEW PROFILE
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
+          </section>
 
-          {/* CATEGORIES MANAGEMENT */}
-          {activeTab === 'categories' && (
-            <div className="p-8">
-              <div className="flex gap-4 mb-10">
-                <input value={newCat} onChange={(e) => setNewCat(e.target.value)} className="flex-1 bg-gray-50 rounded-2xl px-6 py-4 outline-none font-bold" placeholder="Yangi kategoriya nomi..." />
-                <button onClick={createCategory} className="bg-black text-white px-10 rounded-2xl font-black text-xs">ADD CATEGORY</button>
+          {/* 2. CATEGORIES MANAGEMENT - 5/12 width */}
+          <section className="xl:col-span-5 space-y-8">
+            
+            {/* Create Category Card */}
+            <div className="bg-white rounded-[32px] p-8 shadow-sm border border-gray-100">
+              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-6">Create Category</h3>
+              <div className="flex space-x-3">
+                <input 
+                  className="flex-1 bg-gray-50 border-none rounded-2xl px-5 py-4 font-bold text-sm outline-none focus:ring-2 ring-black transition"
+                  placeholder="Category name..."
+                  value={newCat}
+                  onChange={(e) => setNewCat(e.target.value)}
+                />
+                <button 
+                  onClick={handleCreateCategory}
+                  className="bg-black text-white px-6 py-4 rounded-2xl font-black text-[10px] uppercase hover:bg-gray-800 transition shadow-lg shadow-black/10"
+                >
+                  ADD
+                </button>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {categories.map(c => (
-                  <div key={c._id} className="bg-gray-50 p-6 rounded-[1.5rem] flex justify-between items-center group hover:bg-purple-600 transition-all">
-                    <span className="font-black text-sm group-hover:text-white uppercase tracking-widest">{c.name}</span>
-                    <button onClick={async () => { await axios.delete(`${API_BASE}/categories/${c._id}`); loadAllData(); }} className="text-gray-300 group-hover:text-white/50 font-bold">×</button>
+            </div>
+
+            {/* List Category Card */}
+            <div className="bg-white rounded-[32px] p-8 shadow-sm border border-gray-100">
+              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-6">Manage Categories</h3>
+              <div className="space-y-3">
+                {categories.map(cat => (
+                  <div key={cat._id} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-transparent hover:border-gray-200 transition group">
+                    {editingCatId === cat._id ? (
+                      <div className="flex flex-1 space-x-2">
+                        <input 
+                          className="flex-1 bg-white rounded-lg px-2 py-1 font-bold outline-none border-2 border-black"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          autoFocus
+                        />
+                        <button onClick={() => handleUpdateCategory(cat._id)} className="text-green-600 font-black text-[10px]">SAVE</button>
+                        <button onClick={() => setEditingCatId(null)} className="text-gray-400 font-black text-[10px]">CANCEL</button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="font-bold text-gray-800">{cat.name}</span>
+                        <div className="flex space-x-4 opacity-0 group-hover:opacity-100 transition">
+                          <button onClick={() => {setEditingCatId(cat._id); setEditName(cat.name)}} className="text-blue-500 font-black text-[10px] hover:underline">EDIT</button>
+                          <button onClick={() => handleDeleteCategory(cat._id)} className="text-red-400 font-black text-[10px] hover:underline">DELETE</button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
-          )}
+          </section>
+
         </div>
-      </div>
+      </main>
     </div>
   );
 }
