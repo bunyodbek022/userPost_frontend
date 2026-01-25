@@ -67,13 +67,13 @@ export default function Login() {
           {/* Username Input */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 ml-1">Foydalanuvchi nomi</label>
-            <input 
+             <input 
               required
               type="text"
               name="userName"
+              value={formData.userName} 
               placeholder="bunyodbek" 
               className="w-full p-4 mt-1 border-none bg-gray-100 rounded-2xl focus:ring-2 focus:ring-purple-400 outline-none transition-all text-black"
-              // userName (N katta) ekanligiga e'tibor bering
               onChange={(e) => setFormData({...formData, userName: e.target.value})}
             />
           </div>

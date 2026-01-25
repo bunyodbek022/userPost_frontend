@@ -1,8 +1,12 @@
 "use client";
+
 import { useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+
+// API URL
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://bunyodbek.me/api';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -12,22 +16,17 @@ export default function Register() {
     password: ''
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | string[]>(''); // Xatoliklar uchun
   const router = useRouter();
 
-  // Barcha inputlar uchun umumiy handle funksiyasi
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Oddiy validatsiya
-    if (formData.password.length < 6) {
-      return alert("Parol kamida 6 ta belgidan iborat bo'lishi kerak!");
-    }
-
     setLoading(true);
+    setError('');
 
     const dataToSend = {
       ...formData,
@@ -35,74 +34,93 @@ export default function Register() {
     };
 
     try {
-      // API manzili environment variable'dan olinishi tavsiya etiladi
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-      await axios.post(`${API_URL}/users/register`, dataToSend);
+      // Backend: POST /users/register
+      await axios.post(`${API_BASE}/users/register`, dataToSend);
       
-      alert("Muvaffaqiyatli ro'yxatdan o'tdingiz!");
       router.push('/login');
     } catch (err: any) {
-      alert(err.response?.data?.message || "Xatolik yuz berdi!");
+      // Backenddan kelayotgan massiv shaklidagi yoki oddiy xatolarni ushlash
+      const errorMessage = err.response?.data?.message || "Ro'yxatdan o'tishda xatolik yuz berdi";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-6">
-      <div className="w-full max-w-md bg-white/90 backdrop-blur-md p-10 rounded-3xl shadow-2xl transform transition-all hover:scale-[1.01]">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-6 font-sans">
+      <div className="w-full max-w-md bg-white/95 backdrop-blur-sm p-10 rounded-3xl shadow-2xl">
+        
         <div className="text-center mb-8">
-          <h2 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
-            Xush kelibsiz!
+          <h2 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 italic tracking-tighter">
+            DevStories
           </h2>
-          <p className="text-gray-500 mt-2">O'z blogingizni yaratish uchun ro'yxatdan o'ting</p>
+          <p className="text-gray-500 mt-2 font-medium">Yangi akkount yaratish</p>
         </div>
 
-        <form onSubmit={handleRegister} className="space-y-5">
+        {/* Xatoliklarni ko'rsatish */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm rounded-r-lg">
+            {Array.isArray(error) ? (
+              <ul className="list-disc ml-4">
+                {error.map((msg, i) => <li key={i}>{msg}</li>)}
+              </ul>
+            ) : (
+              <p>{error}</p>
+            )}
+          </div>
+        )}
+
+        <form onSubmit={handleRegister} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 ml-1">Username</label>
+            <label className="block text-sm font-semibold text-gray-700 ml-1">Username</label>
             <input 
               required
               name="userName"
+              value={formData.userName} // Controlled component
               type="text" 
-              placeholder="Masalan: johndoe" 
-              className="w-full p-3.5 mt-1 border-none bg-gray-100 rounded-xl focus:ring-2 focus:ring-purple-400 outline-none transition"
+              placeholder="bunyodbek" 
+              className="w-full p-3.5 mt-1 border-none bg-gray-100 rounded-2xl focus:ring-2 focus:ring-purple-400 outline-none transition-all text-black"
               onChange={handleChange}
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 ml-1">Yoshingiz</label>
-            <input 
-              required
-              name="age"
-              type="number" 
-              placeholder="Masalan: 25" 
-              className="w-full p-3.5 mt-1 border-none bg-gray-100 rounded-xl focus:ring-2 focus:ring-purple-400 outline-none transition"
-              onChange={handleChange}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 ml-1">Yosh</label>
+              <input 
+                required
+                name="age"
+                value={formData.age}
+                type="number" 
+                placeholder="25" 
+                className="w-full p-3.5 mt-1 border-none bg-gray-100 rounded-2xl focus:ring-2 focus:ring-purple-400 outline-none transition-all text-black"
+                onChange={handleChange}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 ml-1">Email</label>
+              <input 
+                required
+                name="email"
+                value={formData.email}
+                type="email" 
+                placeholder="info@dev.uz" 
+                className="w-full p-3.5 mt-1 border-none bg-gray-100 rounded-2xl focus:ring-2 focus:ring-purple-400 outline-none transition-all text-black"
+                onChange={handleChange}
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 ml-1">Email manzili</label>
-            <input 
-              required
-              name="email"
-              type="email" 
-              placeholder="john@example.com" 
-              className="w-full p-3.5 mt-1 border-none bg-gray-100 rounded-xl focus:ring-2 focus:ring-purple-400 outline-none transition"
-              onChange={handleChange}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 ml-1">Maxfiy parol</label>
+            <label className="block text-sm font-semibold text-gray-700 ml-1">Maxfiy parol</label>
             <input 
               required
               name="password"
+              value={formData.password}
               type="password" 
-              placeholder="Kamida 6 ta belgi" 
-              className="w-full p-3.5 mt-1 border-none bg-gray-100 rounded-xl focus:ring-2 focus:ring-purple-400 outline-none transition"
+              placeholder="••••••••" 
+              className="w-full p-3.5 mt-1 border-none bg-gray-100 rounded-2xl focus:ring-2 focus:ring-purple-400 outline-none transition-all text-black"
               onChange={handleChange}
             />
           </div>
@@ -110,17 +128,9 @@ export default function Register() {
           <button 
             type="submit" 
             disabled={loading}
-            className={`w-full py-4 mt-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl shadow-lg hover:shadow-purple-500/50 transition-all active:scale-95 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`w-full py-4 mt-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-2xl shadow-lg hover:shadow-purple-500/40 transition-all active:scale-95 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {loading ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin h-5 w-5 mr-3 text-white" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                </svg>
-                Yuborilmoqda...
-              </span>
-            ) : "Ro'yxatdan o'tish"}
+            {loading ? "Yuborilmoqda..." : "Ro'yxatdan o'tish"}
           </button>
         </form>
 
