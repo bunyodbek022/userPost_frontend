@@ -4,7 +4,6 @@ import axios from 'axios';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-// Base URL ni .env fayldan olamiz, agar u bo'lmasa default production manzilni ishlatamiz
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://bunyodbek.me/api';
 axios.defaults.withCredentials = true;
 
@@ -16,8 +15,6 @@ export default function Feed() {
   const [selectedTopic, setSelectedTopic] = useState("All");
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  
-  // Sidebar uchun tizimga kirgan foydalanuvchi ma'lumoti
   const [currentUser, setCurrentUser] = useState<any>(null);
   const router = useRouter();
 
@@ -25,35 +22,29 @@ export default function Feed() {
     try {
       setLoading(true);
       
-      // 1. Tizimga kirgan foydalanuvchi profilini olish
+      // 1. Profilni olish va Adminlikni tekshirish
       try {
         const userRes = await axios.get(`${API_BASE}/users/profile`);
-        // NestJS response formatiga qarab (data.data yoki data)
         const userData = userRes.data.data || userRes.data;
         setCurrentUser(userData);
       } catch (userErr) {
-        console.warn("Profil yuklashda xato (ehtimol login qilinmagan):", userErr);
+        console.warn("Login qilinmagan");
       }
 
-      // 2. Barcha postlarni olish
+      // 2. Postlarni olish
       const postsRes = await axios.get(`${API_BASE}/posts`);
       const allPosts = Array.isArray(postsRes.data) ? postsRes.data : postsRes.data.data || [];
-      const reversedPosts = [...allPosts].reverse();
-      
-      setPosts(reversedPosts);
-      setFilteredPosts(reversedPosts);
+      setPosts([...allPosts].reverse());
+      setFilteredPosts([...allPosts].reverse());
     } catch (err) {
-      console.error("Ma'lumot yuklashda umumiy xato:", err);
+      console.error("Xato:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
-  // Filtrlash logikasi
   useEffect(() => {
     if (selectedTopic === "All") {
       setFilteredPosts(posts);
@@ -70,10 +61,7 @@ export default function Feed() {
     try {
       await axios.post(`${API_BASE}/users/logout`);
       router.push('/login');
-    } catch (err) {
-      console.error("Logout xatosi:", err);
-      router.push('/login'); 
-    }
+    } catch (err) { router.push('/login'); }
   };
 
   return (
@@ -89,36 +77,42 @@ export default function Feed() {
             </button>
           </div>
 
-          <nav className="flex-1 p-6 space-y-6">
-            <Link href="/feed" className="flex items-center space-x-4 text-black font-bold">
+          <nav className="flex-1 p-6 space-y-4">
+            <Link href="/feed" className="flex items-center space-x-4 text-black font-bold p-2 bg-gray-50 rounded-xl">
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
               <span className="text-lg">Home</span>
             </Link>
-            <Link href="/profile" className="flex items-center space-x-4 text-gray-400 hover:text-black transition">
+            
+            {/* ADMIN LINK IN SIDEBAR */}
+            {currentUser?.role === 'admin' && (
+              <Link href="/admin" className="flex items-center space-x-4 text-purple-600 hover:bg-purple-50 p-2 rounded-xl transition font-bold border border-purple-100">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                <span className="text-lg">Dashboard</span>
+              </Link>
+            )}
+
+            <Link href="/profile" className="flex items-center space-x-4 text-gray-400 hover:text-black hover:bg-gray-50 p-2 rounded-xl transition">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
               <span className="text-lg">Profile</span>
             </Link>
-            <Link href="/feed" className="flex items-center space-x-4 text-gray-400 hover:text-black transition">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-              <span className="text-lg">Stories</span>
-            </Link>
           </nav>
 
-          {/* SIDEBAR FOOTER (User info) */}
           <div className="p-6 border-t border-gray-100 bg-gray-50/50">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3 min-w-0">
-                <div className="w-10 h-10 rounded-full bg-black text-white flex-shrink-0 flex items-center justify-center font-bold text-sm">
-                  {currentUser?.userName?.charAt(0).toUpperCase() || currentUser?.email?.charAt(0).toUpperCase() || "U"}
+                <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-sm text-white ${currentUser?.role === 'admin' ? 'bg-purple-600' : 'bg-black'}`}>
+                  {currentUser?.userName?.charAt(0).toUpperCase() || "U"}
                 </div>
                 <div className="flex flex-col min-w-0">
                   <span className="text-sm font-black truncate text-black leading-none mb-1">
                     {currentUser?.userName || "Guest"}
                   </span>
-                  <span className="text-[10px] text-green-600 font-bold uppercase tracking-wider">Online</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${currentUser?.role === 'admin' ? 'text-purple-600' : 'text-green-600'}`}>
+                    {currentUser?.role === 'admin' ? 'Admin' : 'Online'}
+                  </span>
                 </div>
               </div>
-              <button onClick={handleLogout} className="p-2 text-gray-400 hover:text-red-600 transition flex-shrink-0">
+              <button onClick={handleLogout} className="p-2 text-gray-400 hover:text-red-600 transition">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
               </button>
             </div>
@@ -133,17 +127,21 @@ export default function Feed() {
             <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-1 hover:bg-gray-100 rounded-lg">
               <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="1.5" d="M4 6h16M4 12h16M4 18h16"/></svg>
             </button>
-            <span className="text-2xl font-black italic tracking-tighter">DevStories</span>
+            <span className="text-2xl font-black italic tracking-tighter">Feed</span>
           </div>
 
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-4">
+            {/* ADMIN QUICK ACTION BUTTON */}
+            {currentUser?.role === 'admin' && (
+              <Link href="/admin" className="hidden md:flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-full hover:bg-purple-700 transition shadow-lg shadow-purple-200">
+                <span className="text-xs font-bold">Admin Panel</span>
+              </Link>
+            )}
+
             <Link href="/create-post" className="flex items-center space-x-2 text-gray-500 hover:text-black transition">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5"><path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
               <span className="text-sm font-medium">Write</span>
             </Link>
-            <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold ring-2 ring-gray-50">
-               {currentUser?.userName?.charAt(0).toUpperCase() || "U"}
-            </div>
           </div>
         </header>
 
@@ -151,13 +149,7 @@ export default function Feed() {
           {/* Topics bar */}
           <div className="flex items-center space-x-6 border-b border-gray-100 mb-10 overflow-x-auto pb-4 scrollbar-hide">
             {TOPICS.map(topic => (
-              <button 
-                key={topic} 
-                onClick={() => setSelectedTopic(topic)}
-                className={`text-sm whitespace-nowrap pb-2 transition-all ${selectedTopic === topic ? 'border-b-2 border-black font-bold text-black' : 'text-gray-400 hover:text-black'}`}
-              >
-                {topic}
-              </button>
+              <button key={topic} onClick={() => setSelectedTopic(topic)} className={`text-sm whitespace-nowrap pb-2 transition-all ${selectedTopic === topic ? 'border-b-2 border-black font-bold text-black' : 'text-gray-400 hover:text-black'}`}>{topic}</button>
             ))}
           </div>
 
@@ -168,24 +160,23 @@ export default function Feed() {
                 {[1,2,3].map(i => <div key={i} className="h-40 bg-gray-50 rounded-3xl w-full"></div>)}
               </div>
             ) : filteredPosts.length === 0 ? (
-              <div className="text-center py-20">
-                 <p className="text-gray-400">No stories found for this topic.</p>
-              </div>
+              <div className="text-center py-20"><p className="text-gray-400">No stories found.</p></div>
             ) : filteredPosts.map(post => (
               <article key={post._id} className="group cursor-pointer">
                 <div className="flex items-center space-x-2 mb-3">
-                  <div className="w-6 h-6 rounded-full bg-gray-900 text-white flex items-center justify-center text-[10px] font-bold">
+                  <div className={`w-6 h-6 rounded-full text-white flex items-center justify-center text-[10px] font-bold ${post.author?.role === 'admin' ? 'bg-purple-600' : 'bg-gray-900'}`}>
                     {post.author?.userName?.charAt(0).toUpperCase() || "A"}
                   </div>
-                  <span className="text-xs font-bold text-black">{post.author?.userName || "Anonymous"}</span>
+                  <span className="text-xs font-bold text-black">
+                    {post.author?.userName || "Anonymous"} 
+                    {post.author?.role === 'admin' && <span className="ml-1 text-purple-600">✓</span>}
+                  </span>
                 </div>
                 
                 <Link href={`/posts/${post._id}`} className="grid grid-cols-1 md:grid-cols-12 gap-6">
                   <div className="md:col-span-8">
                     <h2 className="text-2xl font-black mb-2 group-hover:underline decoration-2 underline-offset-4">{post.title}</h2>
-                    <p className="text-gray-500 line-clamp-2 text-sm leading-relaxed mb-4">
-                      {post.content || "Fascinating story. Explore the latest insights and developments in this deep dive..."}
-                    </p>
+                    <p className="text-gray-500 line-clamp-2 text-sm leading-relaxed mb-4">{post.content}</p>
                     <div className="flex items-center space-x-3 text-[11px] text-gray-400 font-medium">
                       <span className="bg-gray-100 px-2 py-1 rounded-full text-black">Technology</span>
                       <span>5 min read</span>
