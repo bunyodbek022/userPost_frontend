@@ -10,7 +10,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://bunyodbek.me/api';
 axios.defaults.withCredentials = true;
 
 export default function Login() {
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ username: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
@@ -53,14 +53,14 @@ export default function Login() {
         <form onSubmit={handleLogin} className="space-y-6">
           {/* Email */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 ml-1">Email manzili</label>
-            <input 
-              required
-              type="email" 
-              placeholder="john@example.com" 
-              className="w-full p-4 mt-1 border-none bg-gray-100 rounded-2xl focus:ring-2 focus:ring-purple-400 outline-none transition-all text-black placeholder:text-gray-400 font-sans"
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
-            />
+        <label className="block text-sm font-semibold text-gray-700 ml-1">Foydalanuvchi nomi (Username)</label>
+         <input 
+           required
+           type="text" // email emas, text
+           placeholder="bunyodbek" 
+           className="w-full p-4 mt-1 border-none bg-gray-100 rounded-2xl focus:ring-2 focus:ring-purple-400 outline-none transition-all text-black placeholder:text-gray-400 font-sans"
+          onChange={(e) => setFormData({...formData, username: e.target.value})} // username ni saqlaymiz
+          />
           </div>
 
           {/* Password */}

@@ -60,7 +60,7 @@ export default function Register() {
 
         <form onSubmit={handleRegister} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 ml-1">Foydalanuvchi nomi</label>
+            <label className="block text-sm font-medium text-gray-700 ml-1">Username</label>
             <input 
               required
               name="userName"
