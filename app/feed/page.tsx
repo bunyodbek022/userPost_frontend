@@ -51,28 +51,24 @@ export default function Feed() {
 
   // Like bosish funksiyasi
   const handleLike = async (e: React.MouseEvent, postId: string) => {
-    e.preventDefault(); // Link bosilib ketishini oldini oladi
-    if (!currentUser) return alert("Avval login qiling!");
-    
-    try {
-      await axios.post(`${API_BASE}/posts/${postId}/like`);
-      // Ma'lumotni qayta yuklamasdan state-ni yangilash (Optimistic UI)
-      setPosts(prev => prev.map(p => {
-        if (p._id === postId) {
-          const isLiked = p.likes?.includes(currentUser._id);
-          return {
-            ...p,
-            likes: isLiked 
-              ? p.likes.filter((id: string) => id !== currentUser._id) 
-              : [...(p.likes || []), currentUser._id]
-          };
-        }
-        return p;
-      }));
-    } catch (err) {
-      console.error("Like xatosi:", err);
-    }
-  };
+  e.preventDefault(); 
+  e.stopPropagation(); // Link otib ketishini to'xtatadi
+  
+  if (!currentUser) return alert("Avval login qiling!");
+  
+  try {
+    // 1. Backendga so'rov yuborish
+    const res = await axios.post(`${API_BASE}/posts/${postId}/like`);
+    const updatedPost = res.data.data || res.data; // Backenddan qaytgan yangi post
+
+    // 2. State-ni yangilash (Like soni va rangini darhol ko'rsatish uchun)
+    setPosts(prevPosts => prevPosts.map(p => 
+      p._id === postId ? updatedPost : p
+    ));
+  } catch (err) {
+    console.error("Like xatosi:", err);
+  }
+};
 
   const handleLogout = async () => {
     try {
