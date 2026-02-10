@@ -2,7 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Avatar } from '../ui/Avatar';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || '';
 
 interface PostCardProps {
     post: any;

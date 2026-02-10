@@ -7,7 +7,7 @@ import { MainLayout } from '../../../components/layout/MainLayout';
 import { Avatar } from '../../../components/ui/Avatar';
 import { Spinner } from '../../../components/ui/Spinner';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || '';
 
 export default function PostDetail() {
   const { id } = useParams();
