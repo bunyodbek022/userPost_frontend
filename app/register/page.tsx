@@ -1,12 +1,12 @@
 "use client";
-
 import { useState } from 'react';
-import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-
-// API URL
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://bunyodbek.me/api';
+import { toast } from 'react-hot-toast';
+import api from '../../services/api';
+import { AuthLayout } from '../../components/layout/AuthLayout';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -16,17 +16,21 @@ export default function Register() {
     password: ''
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | string[]>(''); // Xatoliklar uchun
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    // Clear error when user types
+    if (errors[e.target.name]) {
+      setErrors({ ...errors, [e.target.name]: '' });
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setErrors({});
 
     const dataToSend = {
       ...formData,
@@ -34,113 +38,94 @@ export default function Register() {
     };
 
     try {
-      // Backend: POST /users/register
-      await axios.post(`${API_BASE}/users/register`, dataToSend);
-      
+      await api.post('/auth/register', dataToSend);
+      toast.success("Registration successful! Please login.");
       router.push('/login');
     } catch (err: any) {
-      // Backenddan kelayotgan massiv shaklidagi yoki oddiy xatolarni ushlash
-      const errorMessage = err.response?.data?.message || "Ro'yxatdan o'tishda xatolik yuz berdi";
-      setError(errorMessage);
+      const errorMessage = err.response?.data?.message || "Registration failed";
+
+      if (Array.isArray(errorMessage)) {
+        errorMessage.forEach((msg: any) => {
+          if (typeof msg === 'string') {
+            if (msg.toLowerCase().includes('email')) setErrors(prev => ({ ...prev, email: msg }));
+            else if (msg.toLowerCase().includes('username')) setErrors(prev => ({ ...prev, userName: msg }));
+            else if (msg.toLowerCase().includes('password')) setErrors(prev => ({ ...prev, password: msg }));
+            else if (msg.toLowerCase().includes('age')) setErrors(prev => ({ ...prev, age: msg }));
+            else toast.error(msg);
+          }
+        });
+        if (errorMessage.length === 0) toast.error("Registration failed");
+      } else if (typeof errorMessage === 'string') {
+        if (errorMessage.toLowerCase().includes('email')) {
+          setErrors(prev => ({ ...prev, email: errorMessage }));
+        } else if (errorMessage.toLowerCase().includes('username')) {
+          setErrors(prev => ({ ...prev, userName: errorMessage }));
+        } else {
+          toast.error(errorMessage);
+        }
+      } else {
+        toast.error("Registration failed");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-6 font-sans">
-      <div className="w-full max-w-md bg-white/95 backdrop-blur-sm p-10 rounded-3xl shadow-2xl">
-        
-        <div className="text-center mb-8">
-          <h2 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 italic tracking-tighter">
-            DevStories
-          </h2>
-          <p className="text-gray-500 mt-2 font-medium">Yangi akkount yaratish</p>
-        </div>
+    <AuthLayout title="Join DevStories." subtitle="Create an account to verify your email.">
+      <form onSubmit={handleRegister} className="space-y-6">
+        <Input
+          label="Username"
+          name="userName"
+          value={formData.userName}
+          onChange={handleChange}
+          placeholder="Your username"
+          error={errors.userName}
+          required
+        />
+        <Input
+          label="Age"
+          name="age"
+          type="number"
+          value={formData.age}
+          onChange={handleChange}
+          placeholder="Your age"
+          error={errors.age}
+          required
+        />
+        <Input
+          label="Email"
+          name="email"
+          type="email"
+          value={formData.email}
+          onChange={handleChange}
+          placeholder="your@email.com"
+          error={errors.email}
+          required
+        />
+        <Input
+          label="Password"
+          name="password"
+          type="password"
+          value={formData.password}
+          onChange={handleChange}
+          placeholder="••••••••"
+          error={errors.password}
+          required
+          minLength={6}
+        />
 
-        {/* Xatoliklarni ko'rsatish */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm rounded-r-lg">
-            {Array.isArray(error) ? (
-              <ul className="list-disc ml-4">
-                {error.map((msg, i) => <li key={i}>{msg}</li>)}
-              </ul>
-            ) : (
-              <p>{error}</p>
-            )}
-          </div>
-        )}
+        <Button type="submit" className="w-full rounded-full" size="lg" isLoading={loading}>
+          Sign up
+        </Button>
 
-        <form onSubmit={handleRegister} className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 ml-1">Username</label>
-            <input 
-              required
-              name="userName"
-              value={formData.userName} // Controlled component
-              type="text" 
-              placeholder="bunyodbek" 
-              className="w-full p-3.5 mt-1 border-none bg-gray-100 rounded-2xl focus:ring-2 focus:ring-purple-400 outline-none transition-all text-black"
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 ml-1">Yosh</label>
-              <input 
-                required
-                name="age"
-                value={formData.age}
-                type="number" 
-                placeholder="25" 
-                className="w-full p-3.5 mt-1 border-none bg-gray-100 rounded-2xl focus:ring-2 focus:ring-purple-400 outline-none transition-all text-black"
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 ml-1">Email</label>
-              <input 
-                required
-                name="email"
-                value={formData.email}
-                type="email" 
-                placeholder="info@dev.uz" 
-                className="w-full p-3.5 mt-1 border-none bg-gray-100 rounded-2xl focus:ring-2 focus:ring-purple-400 outline-none transition-all text-black"
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 ml-1">Maxfiy parol</label>
-            <input 
-              required
-              name="password"
-              value={formData.password}
-              type="password" 
-              placeholder="••••••••" 
-              className="w-full p-3.5 mt-1 border-none bg-gray-100 rounded-2xl focus:ring-2 focus:ring-purple-400 outline-none transition-all text-black"
-              onChange={handleChange}
-            />
-          </div>
-
-          <button 
-            type="submit" 
-            disabled={loading}
-            className={`w-full py-4 mt-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-2xl shadow-lg hover:shadow-purple-500/40 transition-all active:scale-95 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {loading ? "Yuborilmoqda..." : "Ro'yxatdan o'tish"}
-          </button>
-        </form>
-
-        <p className="mt-8 text-center text-gray-600 text-sm">
-          Akkountingiz bormi? 
-          <Link href="/login" className="ml-1 font-bold text-purple-600 hover:text-purple-800 transition">
-            Tizimga kiring
+        <p className="text-center text-sm text-gray-500 mt-6">
+          Already have an account?
+          <Link href="/login" className="text-green-700 font-bold ml-1 hover:text-green-800">
+            Sign in
           </Link>
         </p>
-      </div>
-    </div>
+      </form>
+    </AuthLayout>
   );
 }

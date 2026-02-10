@@ -1,174 +1,189 @@
 "use client";
-import { useEffect, useState } from 'react';
-import axios from 'axios';
+import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { toast } from 'react-hot-toast';
+import api from '../../services/api';
+import { MainLayout } from '../../components/layout/MainLayout';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Spinner } from '../../components/ui/Spinner';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://bunyodbek.me/api';
-axios.defaults.withCredentials = true;
+interface Category {
+  _id: string;
+  name: string;
+}
 
-export default function CreatePost() {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [loading, setLoading] = useState(false);
-  
-  // Kategoriya uchun state-lar
-  const [availableCategories, setAvailableCategories] = useState<any[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
-
+export default function CreatePostPage() {
   const router = useRouter();
 
-  // 1. Backenddan barcha kategoriyalarni olish
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [image, setImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Kategoriyalarni yuklash
   useEffect(() => {
-    const fetchCats = async () => {
+    const fetchInitData = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/categories`);
-        setAvailableCategories(res.data.data || res.data);
+        const [catRes, userRes] = await Promise.all([
+          api.get('/categories'),
+          api.get('/users/profile').catch(() => ({ data: null }))
+        ]);
+
+        setCategories(catRes.data.data || catRes.data || []);
+        setCurrentUser(userRes.data?.data || userRes.data || null);
       } catch (err) {
-        console.error("Kategoriyalarni yuklashda xato");
+        console.error('Initialization error:', err);
+        toast.error("Failed to load data");
       }
     };
-    fetchCats();
+    fetchInitData();
   }, []);
 
-  // Kategoriya tanlash/o'chirish logikasi
-  const toggleCategory = (id: string) => {
-    setSelectedCategories(prev => 
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const toggleCategory = (catId: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(catId)
+        ? prev.filter(id => id !== catId)
+        : [...prev, catId]
     );
   };
 
-  const handlePublish = async () => {
-    if (!title || !content) {
-      alert("Iltimos, sarlavha va matnni to'ldiring!");
-      return;
-    }
-    if (selectedCategories.length === 0) {
-      alert("Kamida bitta kategoriya tanlang!");
-      setShowCategoryModal(true); // Modalni ochish
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    if (!title.trim() || !content.trim() || selectedCategories.length === 0) {
+      toast.error("Please fill all required fields");
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
+    const formData = new FormData();
+    formData.append('title', title.trim());
+    formData.append('content', content.trim());
+    formData.append('categories', selectedCategories.join(','));
+    if (image) formData.append('coverImage', image);
+
     try {
-      // Swagger: POST /posts 
-      // Endi 'categories' ID massivini ham yuboramiz
-      await axios.post(`${API_BASE}/posts`, { 
-        title, 
-        content, 
-        categories: selectedCategories 
+      await api.post('/posts', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
+
+      toast.success("Story published successfully!");
       router.push('/feed');
-    } catch (err) {
-      alert("Xatolik! Tizimga kirganingizni va kategoriyalar tanlanganini tekshiring.");
+    } catch (err: any) {
+      const msg = err.response?.data?.message || "Something went wrong";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-white text-black font-serif">
-      {/* Upper Bar */}
-      <nav className="max-w-5xl mx-auto flex justify-between items-center py-4 px-6 border-b border-gray-50 sticky top-0 bg-white/80 backdrop-blur-md z-50">
-        <div className="flex items-center space-x-4">
-          <Link href="/feed" className="text-2xl font-black tracking-tighter">D.</Link>
-          <span className="text-sm text-gray-400 font-sans italic truncate max-w-[150px]">
-            Draft in {title || "Untitled"}
-          </span>
-        </div>
-        
-        <div className="flex items-center space-x-4 font-sans">
-          {/* Kategoriya tanlash tugmasi */}
-          <button 
-            onClick={() => setShowCategoryModal(true)}
-            className="text-sm font-medium text-purple-600 border border-purple-100 px-4 py-1.5 rounded-full hover:bg-purple-50 transition"
+    <MainLayout currentUser={currentUser}>
+      <div className="max-w-4xl mx-auto py-10 px-6 xl:px-0">
+        <div className="flex items-center justify-between mb-12 border-b border-gray-100 pb-4">
+          <div className="flex items-center gap-3">
+            <span className="text-gray-400 text-sm">Draft in {currentUser?.userName}</span>
+          </div>
+          <Button
+            onClick={handleSubmit}
+            isLoading={loading}
+            disabled={!title || !content || selectedCategories.length === 0}
+            className="rounded-full px-6 bg-green-600 hover:bg-green-700 text-white border-none text-sm transition-colors"
           >
-            {selectedCategories.length > 0 ? `${selectedCategories.length} Tags selected` : "Add Tags"}
-          </button>
-
-          <button 
-            onClick={handlePublish}
-            disabled={loading}
-            className="bg-[#1a8917] hover:bg-[#156d12] text-white px-5 py-1.5 rounded-full text-sm font-medium transition-all disabled:opacity-50"
-          >
-            {loading ? "Publishing..." : "Publish"}
-          </button>
+            Publish
+          </Button>
         </div>
-      </nav>
 
-      {/* Writing Area */}
-      <main className="max-w-3xl mx-auto px-6 py-20">
-        <div className="flex items-start mb-10 group">
-            <div className="mt-3 w-10 h-10 border-l border-gray-100 flex items-center justify-center group-hover:border-gray-300 transition-colors">
-                <svg className="w-6 h-6 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M12 4v16m8-8H4"/></svg>
-            </div>
-            
-            <textarea 
-              placeholder="Title"
-              rows={1}
+        <form className="space-y-8">
+          {/* Title Input */}
+          <div className="relative group">
+            <input
+              type="text"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full text-4xl md:text-5xl font-bold border-none outline-none placeholder:text-gray-200 resize-none ml-6 overflow-hidden leading-tight text-black"
-              onInput={(e: any) => {
-                e.target.style.height = 'auto';
-                e.target.style.height = e.target.scrollHeight + 'px';
-              }}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="Title"
+              className="w-full text-4xl md:text-5xl font-serif font-bold placeholder:text-gray-300 border-none outline-none bg-transparent"
+              autoFocus
             />
-        </div>
+          </div>
 
-        <textarea 
-          placeholder="Tell your story..."
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          className="w-full text-xl md:text-2xl border-none outline-none placeholder:text-gray-100 resize-none min-h-[500px] leading-relaxed text-black font-sans"
-        />
-      </main>
+          {/* Image Upload */}
+          <div className="group">
+            {!imagePreview ? (
+              <label className="flex items-center gap-2 cursor-pointer text-gray-400 hover:text-black transition w-fit">
+                <span className="text-2xl">+</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+              </label>
+            ) : (
+              <div className="relative group/img">
+                <img src={imagePreview} alt="Cover" className="w-full max-h-[400px] object-cover rounded-lg" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImage(null);
+                    setImagePreview(null);
+                  }}
+                  className="absolute top-4 right-4 bg-white/80 p-2 rounded-full text-red-600 hover:bg-white transition opacity-0 group-hover/img:opacity-100"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+          </div>
 
-      {/* --- CATEGORY SELECT MODAL --- */}
-      {showCategoryModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowCategoryModal(false)}></div>
-          <div className="bg-white rounded-[2.5rem] w-full max-w-lg p-10 relative shadow-2xl animate-in fade-in zoom-in duration-300">
-            <h2 className="text-2xl font-black mb-2 tracking-tight">Add topics</h2>
-            <p className="text-gray-400 text-sm mb-8 font-sans">
-              Story'ngiz qaysi mavzularga oid? Kamida bittasini tanlang.
-            </p>
-            
-            <div className="flex flex-wrap gap-3 mb-10 font-sans">
-              {availableCategories.map(cat => (
+          {/* Content Textarea */}
+          <div>
+            <textarea
+              value={content}
+              onChange={e => setContent(e.target.value)}
+              placeholder="Tell your story..."
+              rows={15}
+              className="w-full text-xl font-serif leading-relaxed placeholder:text-gray-300 border-none outline-none bg-transparent resize-y"
+            />
+          </div>
+
+          {/* Categories */}
+          <div className="pt-8 border-t border-gray-100">
+            <p className="text-sm font-medium text-gray-500 mb-4 uppercase tracking-wide">Topics</p>
+            <div className="flex flex-wrap gap-2">
+              {categories.map(cat => (
                 <button
                   key={cat._id}
+                  type="button"
                   onClick={() => toggleCategory(cat._id)}
-                  className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all border ${
-                    selectedCategories.includes(cat._id)
-                    ? 'bg-black text-white border-black'
-                    : 'bg-white text-gray-400 border-gray-100 hover:border-gray-300'
-                  }`}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${selectedCategories.includes(cat._id)
+                    ? 'bg-green-600 text-white shadow-sm'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    }`}
                 >
                   {cat.name}
                 </button>
               ))}
             </div>
-
-            <button 
-              onClick={() => setShowCategoryModal(false)}
-              className="w-full bg-purple-600 text-white py-4 rounded-2xl font-black text-sm hover:bg-black transition-all"
-            >
-              DONE ({selectedCategories.length})
-            </button>
           </div>
-        </div>
-      )}
-
-      {/* Floating Toolbar */}
-      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-white shadow-2xl border border-gray-100 rounded-full px-6 py-3 flex items-center space-x-6 z-40">
-         <button title="Formatting" className="text-gray-400 hover:text-black transition font-bold font-serif text-xl italic">Tt</button>
-         <button title="Add Image" className="text-gray-400 hover:text-black transition"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h14a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></button>
-         <button onClick={() => setShowCategoryModal(true)} title="Add Categories" className={`transition ${selectedCategories.length > 0 ? 'text-purple-600' : 'text-gray-400'}`}>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-         </button>
+        </form>
       </div>
-    </div>
+    </MainLayout>
   );
 }

@@ -3,7 +3,9 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams } from 'next/navigation';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+// API URL
+const API_BASE = '/api';
+console.log(API_BASE)
 
 export default function UserProfileView() {
   const { id } = useParams();

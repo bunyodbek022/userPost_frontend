@@ -1,239 +1,214 @@
 "use client";
-import { useEffect, useState, useCallback, Suspense } from 'react';
-import axios from 'axios';
-import Link from 'next/link';
+import React, { useEffect, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import api from '../../services/api';
+import { MainLayout } from '../../components/layout/MainLayout';
+import { PostCard } from '../../components/features/PostCard';
+import { CategoryTabs } from '../../components/features/CategoryTabs';
+import { Spinner } from '../../components/ui/Spinner';
+import { Skeleton } from '../../components/ui/Skeleton';
+import Link from 'next/link';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://bunyodbek.me/api';
-axios.defaults.withCredentials = true;
-
-// 1. Asosiy Kontent Komponenti
 function FeedContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // State-lar
   const [posts, setPosts] = useState<any[]>([]);
+  const [topPosts, setTopPosts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // URL parametrlarini o'qish
   const currentCategory = searchParams.get('category') || 'All';
   const currentSearch = searchParams.get('search') || '';
 
-  // Ma'lumotlarni yuklash funksiyasi
-  const loadData = useCallback(async () => {
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const [catsRes, userRes, topPostsRes] = await Promise.all([
+          api.get('/categories'),
+          api.get('/users/profile').catch(() => null),
+          api.get('/posts?sort=popular&limit=5')
+        ]);
+
+        setCategories(catsRes.data.data || catsRes.data || []);
+        setTopPosts(topPostsRes.data.data || topPostsRes.data || []);
+
+        if (userRes) {
+          setCurrentUser(userRes.data.data || userRes.data || null);
+        }
+      } catch (err) {
+        console.error("Initialization error:", err);
+      }
+    };
+    fetchInitialData();
+  }, []);
+
+  const loadFeedData = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      // API URL yasash
-      let postsUrl = `${API_BASE}/posts?limit=50`;
-      
-      // Agar kategoriya tanlangan bo'lsa, uning ID-sini topamiz
-      if (currentCategory !== 'All' && categories.length > 0) {
-        const catObj = categories.find(c => c.name === currentCategory);
-        if (catObj) postsUrl += `&category=${catObj._id}`;
+      let url = '/posts?limit=20'; // Default is sorting by createdAt (latest)
+      if (currentCategory !== 'All') {
+        const cat = categories.find(c => c.name === currentCategory);
+        if (cat) url += `&category=${cat._id}`;
       }
-      
-      if (currentSearch) {
-        postsUrl += `&search=${encodeURIComponent(currentSearch)}`;
-      }
+      if (currentSearch) url += `&search=${encodeURIComponent(currentSearch)}`;
 
-      // Parallel so'rovlar
-      const [userRes, postsRes, catsRes] = await Promise.allSettled([
-        axios.get(`${API_BASE}/users/profile`),
-        axios.get(postsUrl),
-        axios.get(`${API_BASE}/categories`)
-      ]);
-
-      if (userRes.status === 'fulfilled') {
-        setCurrentUser(userRes.value.data.data || userRes.value.data);
-      }
-      if (catsRes.status === 'fulfilled') {
-        setCategories(catsRes.value.data.data || catsRes.value.data);
-      }
-      if (postsRes.status === 'fulfilled') {
-        const data = postsRes.value.data.data || postsRes.value.data || [];
-        setPosts(data);
-      }
+      const postsRes = await api.get(url);
+      setPosts(postsRes.data.data || postsRes.data || []);
     } catch (err) {
-      console.error("Feed yuklashda xato:", err);
+      console.error("Feed error:", err);
     } finally {
       setLoading(false);
     }
   }, [currentCategory, currentSearch, categories]);
 
-  // Faqat birinchi marta va kategoriya o'zgarganda ishlaydi
   useEffect(() => {
-    loadData();
-  }, [currentCategory, currentSearch, categories.length]);
+    if (categories.length > 0 || currentCategory === 'All') {
+      loadFeedData();
+    }
+  }, [loadFeedData, categories.length]);
 
-  const updateFilters = (category: string, search: string) => {
+  const updateFilters = (category: string) => {
     const params = new URLSearchParams();
     if (category !== 'All') params.set('category', category);
-    if (search) params.set('search', search);
+    if (currentSearch) params.set('search', currentSearch);
     router.push(`/feed?${params.toString()}`);
   };
 
   const handleLike = async (postId: string) => {
     try {
-      const res = await axios.post(`${API_BASE}/posts/${postId}/like`);
-      const updatedPost = res.data.data || res.data;
-      setPosts(prev => prev.map(p => (p._id === postId ? updatedPost : p)));
-    } catch (err) {
-      console.error("Like xatosi", err);
-    }
-  };
+      const res = await api.post(`/posts/${postId}/like`);
+      const updated = res.data.data || res.data;
 
-  const handleLogout = async () => {
-    try {
-      await axios.post(`${API_BASE}/users/logout`);
-      router.push('/login');
-    } catch {
-      router.push('/login');
+      // Update in both lists if present
+      setPosts(prev =>
+        prev.map(p => (p._id === postId ? { ...p, likes: updated.likes } : p))
+      );
+      setTopPosts(prev =>
+        prev.map(p => (p._id === postId ? { ...p, likes: updated.likes } : p))
+      );
+    } catch (err) {
+      console.error("Like error:", err);
     }
   };
 
   return (
-    <div className="min-h-screen bg-white text-black flex overflow-x-hidden font-sans">
-      
-      {/* SIDEBAR */}
-      <aside className={`fixed inset-y-0 left-0 z-[60] w-[280px] bg-white border-r border-gray-100 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 lg:translate-x-0`}>
-        <div className="flex flex-col h-full p-6">
-          <div className="flex items-center justify-between mb-10">
-            <span className="text-2xl font-black italic tracking-tighter">DevStories</span>
-            <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-gray-400">✕</button>
+    <MainLayout currentUser={currentUser}>
+      <div className="flex flex-col lg:flex-row gap-16 py-10 px-4 xl:px-0 max-w-7xl mx-auto">
+        {/* Main Feed Column */}
+        <div className="flex-1 max-w-3xl lg:ml-12 border-r border-gray-100 pr-0 lg:pr-16">
+
+          {/* Search Bar */}
+          <div className="mb-8 relative">
+            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-gray-400">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+              </svg>
+            </div>
+            <input
+              type="search"
+              placeholder="Search stories..."
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-full border-none focus:ring-0 focus:bg-white focus:outline focus:outline-1 focus:outline-gray-300 transition-colors text-sm placeholder:text-gray-500"
+              value={currentSearch}
+              onChange={(e) => {
+                const params = new URLSearchParams(searchParams);
+                if (e.target.value) params.set('search', e.target.value);
+                else params.delete('search');
+                router.push(`/feed?${params.toString()}`);
+              }}
+            />
           </div>
 
-          <nav className="flex-1 space-y-2">
-            <Link href="/feed" className="flex items-center space-x-4 text-black font-bold p-3 bg-gray-50 rounded-2xl">
-               <span className="text-xl">🏠</span> <span>Home</span>
-            </Link>
-            {currentUser?.role === 'admin' && (
-              <Link href="/admin" className="flex items-center space-x-4 text-purple-600 p-3 rounded-2xl hover:bg-purple-50 transition font-bold border border-purple-100">
-                <span>📊</span> <span>Dashboard</span>
-              </Link>
-            )}
-            <Link href="/profile" className="flex items-center space-x-4 text-gray-500 hover:text-black p-3 rounded-2xl transition font-medium">
-               <span>👤</span> <span>Profile</span>
-            </Link>
-          </nav>
+          <CategoryTabs
+            categories={categories}
+            currentCategory={currentCategory}
+            onSelect={updateFilters}
+          />
 
-          <div className="pt-6 border-t border-gray-100 flex items-center justify-between">
-            <div className="flex items-center space-x-3 truncate">
-              <div className="w-10 h-10 rounded-full bg-black text-white flex items-center justify-center font-bold flex-shrink-0">
-                {currentUser?.userName?.charAt(0).toUpperCase() || "G"}
-              </div>
-              <div className="truncate text-left">
-                <p className="text-sm font-bold truncate">{currentUser?.userName || "Guest"}</p>
-                <p className="text-[10px] text-green-600 font-black uppercase">Online</p>
-              </div>
+          {loading ? (
+            <div className="space-y-10 mt-8">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="space-y-4">
+                  <div className="flex gap-4 items-center">
+                    <Skeleton className="w-8 h-8 rounded-full" />
+                    <Skeleton className="w-32 h-4" />
+                  </div>
+                  <Skeleton className="w-full h-48 rounded-md" />
+                  <Skeleton className="w-3/4 h-6" />
+                </div>
+              ))}
             </div>
-            <button onClick={handleLogout} className="text-gray-400 hover:text-red-500">🚪</button>
+          ) : posts.length === 0 ? (
+            <div className="text-center py-20 bg-gray-50 rounded-lg mt-8">
+              <p className="text-gray-500 mb-4">No stories found.</p>
+              <Link href="/create-post" className="text-black font-medium underline">
+                Write the first story
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-0 mt-2">
+              {posts.map(post => (
+                <PostCard
+                  key={post._id}
+                  post={post}
+                  currentUser={currentUser}
+                  onLike={handleLike}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Right Sidebar (Desktop only) */}
+        <div className="hidden lg:block w-80 sticky top-24 h-fit space-y-10">
+
+          {/* Top Posts */}
+          <div>
+            <h3 className="font-bold text-base mb-6 tracking-wide uppercase text-gray-500 text-xs">Top Picks</h3>
+            <div className="space-y-6">
+              {topPosts.map((post) => (
+                <div key={post._id} className="group cursor-pointer" onClick={() => router.push(`/posts/${post._id}`)}>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-xs font-semibold text-gray-800">{post.author?.userName}</span>
+                    </div>
+                    <h4 className="font-bold text-base leading-snug text-gray-900 group-hover:underline line-clamp-2 mb-1">
+                      {post.title}
+                    </h4>
+                    <p className="text-xs text-gray-500 line-clamp-2 mb-2 font-serif">
+                      {post.content?.substring(0, 80)}...
+                    </p>
+                    <div className="flex items-center gap-2 text-[10px] text-gray-400">
+                      <span>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                      <span>·</span>
+                      <span>{post.likes?.length || 0} likes</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+
+
+          {/* Footer Links */}
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-gray-400 pt-4 border-t border-gray-100">
+            <a href="#" className="hover:text-gray-600">Help</a>
+            <a href="#" className="hover:text-gray-600">Status</a>
+            <a href="#" className="hover:text-gray-600">Privacy</a>
+            <a href="#" className="hover:text-gray-600">Terms</a>
+            <a href="#" className="hover:text-gray-600">About</a>
           </div>
         </div>
-      </aside>
-
-      {/* MAIN SECTION */}
-      <div className="flex-1 lg:ml-[280px]">
-        <header className="sticky top-0 bg-white/80 backdrop-blur-md z-40 border-b border-gray-50 px-6 py-4">
-          <div className="max-w-4xl mx-auto flex items-center gap-4">
-            <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-2xl">☰</button>
-            <div className="relative flex-1 group">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
-              <input
-                type="text"
-                placeholder="Search stories..."
-                className="w-full pl-12 pr-4 py-3 bg-gray-100 border-none rounded-2xl outline-none focus:ring-2 ring-black transition"
-                value={currentSearch}
-                onChange={(e) => updateFilters(currentCategory, e.target.value)}
-              />
-            </div>
-            <Link href="/create-post" className="bg-black text-white px-6 py-3 rounded-2xl font-black text-sm hover:bg-gray-800 transition">
-              WRITE
-            </Link>
-          </div>
-        </header>
-
-        <main className="max-w-4xl mx-auto px-6 py-8">
-          <div className="flex items-center space-x-8 border-b border-gray-100 mb-10 overflow-x-auto no-scrollbar">
-            {['All', ...categories.map(c => c.name)].map(catName => (
-              <button
-                key={catName}
-                onClick={() => updateFilters(catName, currentSearch)}
-                className={`pb-4 text-sm font-bold transition-all whitespace-nowrap ${currentCategory === catName ? 'border-b-2 border-black text-black' : 'text-gray-400 hover:text-black'}`}
-              >
-                {catName}
-              </button>
-            ))}
-          </div>
-
-          <div className="space-y-16">
-            {loading ? (
-              <div className="space-y-10 animate-pulse">
-                {[1, 2, 3].map(i => <div key={i} className="h-48 bg-gray-50 rounded-[32px]" />)}
-              </div>
-            ) : posts.length === 0 ? (
-              <div className="text-center py-20 text-gray-400 font-bold italic">No stories found.</div>
-            ) : posts.map(post => {
-                const isLiked = post.likes?.some((id: any) => (id._id || id) === currentUser?._id);
-                return (
-                  <article key={post._id} className="group">
-                    <div className="flex items-center space-x-2 mb-4">
-                      <div className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center text-[10px] font-bold italic">
-                        {post.author?.userName?.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="text-xs font-black">{post.author?.userName}</span>
-                      <span className="text-gray-300">•</span>
-                      <span className="text-gray-400 text-[10px] font-bold uppercase">
-                        {new Date(post.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-
-                    <div className="grid md:grid-cols-12 gap-8">
-                      <div className="md:col-span-8">
-                        <Link href={`/posts/${post._id}`}>
-                          <h2 className="text-2xl font-black mb-3 leading-tight group-hover:underline">{post.title}</h2>
-                          <p className="text-gray-500 line-clamp-3 leading-relaxed mb-6">{post.content}</p>
-                        </Link>
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="flex gap-2">
-                            {post.categories?.map((c: any) => (
-                              <span key={c._id} className="bg-gray-100 text-[10px] font-black uppercase px-3 py-1 rounded-full text-gray-500 italic">
-                                #{c.name}
-                              </span>
-                            ))}
-                          </div>
-                          <button 
-                            onClick={() => handleLike(post._id)}
-                            className={`flex items-center space-x-2 px-4 py-2 rounded-2xl transition ${isLiked ? 'bg-pink-50 text-pink-600' : 'text-gray-400 hover:bg-gray-50'}`}
-                          >
-                            <span className="text-lg">{isLiked ? '❤️' : '🤍'}</span>
-                            <span className="text-xs font-black">{post.likes?.length || 0}</span>
-                          </button>
-                        </div>
-                      </div>
-                      <div className="md:col-span-4 hidden md:block">
-                        <div className="aspect-square bg-gray-50 rounded-[32px] border border-gray-100 flex items-center justify-center text-4xl">🖼️</div>
-                      </div>
-                    </div>
-                  </article>
-                );
-            })}
-          </div>
-        </main>
       </div>
-    </div>
+    </MainLayout>
   );
 }
 
-// 2. Final Export (Build-xatosini oldini olish uchun Suspense)
 export default function Feed() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center font-black italic">Loading DevStories...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Spinner size="lg" /></div>}>
       <FeedContent />
     </Suspense>
   );

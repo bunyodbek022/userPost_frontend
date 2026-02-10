@@ -1,12 +1,28 @@
 @import "tailwindcss";
 
-/* Mana bu qatorlar matn ko'rinishi uchun qo'shimcha */
+@theme {
+  --font-serif: "Charter", "Bitstream Charter", "Sitka Text", "Cambria", "serif";
+  --font-sans: "Soehne", "Helvetica Neue", "Helvetica", "Arial", "sans-serif";
+}
+
 @layer base {
   body {
-    @apply bg-white text-gray-900;
+    @apply bg-white text-gray-900 font-serif antialiased;
+    font-feature-settings: "kern", "liga", "clig", "calt";
   }
-  
-  input, textarea {
-    @apply text-gray-900 placeholder:text-gray-400 bg-gray-100;
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight text-black;
+  }
+
+  /* UI elementlari uchun sans-serif */
+  button, input, textarea, label, nav, .font-sans {
+    font-family: var(--font-sans);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
   }
 }
