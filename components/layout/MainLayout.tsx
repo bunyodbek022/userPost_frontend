@@ -34,7 +34,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children, currentUser })
     return (
         <div className="min-h-screen bg-white">
             {/* Desktop Sidebar */}
-            <Sidebar currentUser={currentUser} onLogout={handleLogout} />
+            <Sidebar
+                currentUser={currentUser}
+                onLogout={handleLogout}
+                className="hidden lg:flex flex-col fixed inset-y-0 left-0 z-50 w-20 xl:w-72"
+            />
 
             {/* Mobile Header */}
             <MobileHeader onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
@@ -42,8 +46,13 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children, currentUser })
             {/* Mobile Sidebar Overlay (could be improved into a Drawer) */}
             {isMobileMenuOpen && (
                 <div className="lg:hidden fixed inset-0 z-50 bg-black/50" onClick={() => setIsMobileMenuOpen(false)}>
-                    <div className="bg-white w-64 h-full p-4" onClick={e => e.stopPropagation()}>
-                        <Sidebar currentUser={currentUser} onLogout={handleLogout} />
+                    <div className="bg-white w-64 h-full" onClick={e => e.stopPropagation()}>
+                        <Sidebar
+                            currentUser={currentUser}
+                            onLogout={handleLogout}
+                            isMobile={true}
+                            className="flex flex-col w-full h-full"
+                        />
                     </div>
                 </div>
             )}

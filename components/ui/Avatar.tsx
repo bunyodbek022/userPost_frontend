@@ -22,17 +22,23 @@ export const Avatar: React.FC<AvatarProps> = ({
         xl: "w-20 h-20 text-xl",
     };
 
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+    const backendUrl = apiUrl.replace(/\/api$/, '');
+
+    const fullSrc = src?.startsWith('/uploads') ? `${backendUrl}${src}` : src;
+
     return (
         <div
             className={`relative inline-flex items-center justify-center rounded-full overflow-hidden bg-gray-100 border border-gray-200 ${sizeClasses[size]} ${className}`}
         >
             {src ? (
                 <Image
-                    src={src}
+                    src={fullSrc || src}
                     alt={alt}
                     fill
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     className="object-cover"
+                    unoptimized
                 />
             ) : (
                 <span className="font-medium text-gray-600 uppercase tracking-wider">

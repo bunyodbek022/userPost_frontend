@@ -1,12 +1,15 @@
 "use client";
-import React, { useEffect, useState, useCallback, Suspense } from 'react';
+import React, { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { toast } from 'react-hot-toast';
 import api from '../../services/api';
 import { MainLayout } from '../../components/layout/MainLayout';
 import { PostCard } from '../../components/features/PostCard';
 import { CategoryTabs } from '../../components/features/CategoryTabs';
 import { Spinner } from '../../components/ui/Spinner';
 import { Skeleton } from '../../components/ui/Skeleton';
+import { Button } from '../../components/ui/Button';
+import { Avatar } from '../../components/ui/Avatar';
 import Link from 'next/link';
 
 function FeedContent() {
@@ -19,8 +22,25 @@ function FeedContent() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // Edit Post Modal
+  const [editingPost, setEditingPost] = useState<any>(null);
+  const [editPostForm, setEditPostForm] = useState({ title: '', content: '' });
+  const [isSavingPost, setIsSavingPost] = useState(false);
+
   const currentCategory = searchParams.get('category') || 'All';
   const currentSearch = searchParams.get('search') || '';
+  const focusSearch = searchParams.get('focus') === 'search';
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (focusSearch && searchInputRef.current) {
+      searchInputRef.current.focus();
+      // Clean the URL param after focusing
+      const params = new URLSearchParams(searchParams);
+      params.delete('focus');
+      router.replace(`/feed${params.toString() ? '?' + params.toString() : ''}`);
+    }
+  }, [focusSearch]);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -81,7 +101,6 @@ function FeedContent() {
       const res = await api.post(`/posts/${postId}/like`);
       const updated = res.data.data || res.data;
 
-      // Update in both lists if present
       setPosts(prev =>
         prev.map(p => (p._id === postId ? { ...p, likes: updated.likes } : p))
       );
@@ -90,6 +109,45 @@ function FeedContent() {
       );
     } catch (err) {
       console.error("Like error:", err);
+    }
+  };
+
+  // --- Post Edit ---
+  const handleEditPost = (post: any) => {
+    setEditingPost(post);
+    setEditPostForm({
+      title: post.title || '',
+      content: post.content || '',
+    });
+  };
+
+  const handleSavePost = async () => {
+    if (!editingPost?._id) return;
+    try {
+      setIsSavingPost(true);
+      const res = await api.patch(`/posts/${editingPost._id}`, editPostForm);
+      const updated = res.data.data || res.data;
+      toast.success("Story updated successfully");
+      setEditingPost(null);
+      setPosts(prev =>
+        prev.map(p => (p._id === editingPost._id ? { ...p, title: updated.title || editPostForm.title, content: updated.content || editPostForm.content } : p))
+      );
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to update story");
+    } finally {
+      setIsSavingPost(false);
+    }
+  };
+
+  // --- Post Delete ---
+  const handleDeletePost = async (postId: string) => {
+    try {
+      await api.delete(`/posts/${postId}`);
+      toast.success("Story deleted successfully");
+      setPosts(prev => prev.filter(p => p._id !== postId));
+      setTopPosts(prev => prev.filter(p => p._id !== postId));
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to delete story");
     }
   };
 
@@ -107,6 +165,7 @@ function FeedContent() {
               </svg>
             </div>
             <input
+              ref={searchInputRef}
               type="search"
               placeholder="Search stories..."
               className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-full border-none focus:ring-0 focus:bg-white focus:outline focus:outline-1 focus:outline-gray-300 transition-colors text-sm placeholder:text-gray-500"
@@ -154,6 +213,8 @@ function FeedContent() {
                   post={post}
                   currentUser={currentUser}
                   onLike={handleLike}
+                  onEdit={handleEditPost}
+                  onDelete={handleDeletePost}
                 />
               ))}
             </div>
@@ -163,34 +224,57 @@ function FeedContent() {
         {/* Right Sidebar (Desktop only) */}
         <div className="hidden lg:block w-80 sticky top-24 h-fit space-y-10">
 
-          {/* Top Posts */}
+          {/* Staff Picks */}
           <div>
-            <h3 className="font-bold text-base mb-6 tracking-wide uppercase text-gray-500 text-xs">Top Picks</h3>
-            <div className="space-y-6">
-              {topPosts.map((post) => (
+            <h3 className="font-bold text-base mb-5 text-gray-900">Staff Picks</h3>
+            <div className="space-y-5">
+              {topPosts.slice(0, 3).map((post) => (
                 <div key={post._id} className="group cursor-pointer" onClick={() => router.push(`/posts/${post._id}`)}>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-xs font-semibold text-gray-800">{post.author?.userName}</span>
-                    </div>
-                    <h4 className="font-bold text-base leading-snug text-gray-900 group-hover:underline line-clamp-2 mb-1">
-                      {post.title}
-                    </h4>
-                    <p className="text-xs text-gray-500 line-clamp-2 mb-2 font-serif">
-                      {post.content?.substring(0, 80)}...
-                    </p>
-                    <div className="flex items-center gap-2 text-[10px] text-gray-400">
-                      <span>{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-                      <span>·</span>
-                      <span>{post.likes?.length || 0} likes</span>
-                    </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Avatar
+                      src={post.author?.avatar}
+                      fallback={post.author?.userName || '?'}
+                      alt={post.author?.userName}
+                      size="sm"
+                      className="w-5 h-5 text-[10px]"
+                    />
+                    <span className="text-xs font-medium text-gray-800">{post.author?.userName}</span>
+                  </div>
+                  <h4 className="font-extrabold text-[15px] leading-snug text-gray-900 group-hover:underline line-clamp-2 mb-1">
+                    {post.title}
+                  </h4>
+                  <div className="flex items-center gap-1 text-xs text-gray-500 mt-1.5">
+                    <span className="text-amber-500 text-[10px]">✦</span>
+                    <span>{new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                   </div>
                 </div>
               ))}
             </div>
+            <Link href="/feed?sort=popular" className="text-sm text-green-600 hover:text-green-700 font-medium mt-5 inline-block transition-colors">
+              See the full list
+            </Link>
           </div>
 
-
+          {/* Recommended Topics */}
+          {categories.length > 0 && (
+            <div>
+              <h3 className="font-bold text-base mb-4 text-gray-900">Recommended topics</h3>
+              <div className="flex flex-wrap gap-2">
+                {categories.slice(0, 7).map((cat: any) => (
+                  <button
+                    key={cat._id}
+                    onClick={() => updateFilters(cat.name)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${currentCategory === cat.name
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Footer Links */}
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-gray-400 pt-4 border-t border-gray-100">
@@ -202,6 +286,67 @@ function FeedContent() {
           </div>
         </div>
       </div>
+
+      {/* EDIT POST MODAL */}
+      {editingPost && (
+        <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+          <div className="max-w-2xl w-full bg-white shadow-2xl rounded-2xl p-8 border border-gray-100 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-bold">Edit Story</h2>
+              <button
+                onClick={() => setEditingPost(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-2 uppercase tracking-wide">Title</label>
+                <input
+                  type="text"
+                  className="w-full text-2xl font-bold font-serif placeholder:text-gray-300 border-b border-gray-200 focus:border-black outline-none py-3 transition bg-transparent"
+                  value={editPostForm.title}
+                  onChange={(e) => setEditPostForm({ ...editPostForm, title: e.target.value })}
+                  placeholder="Story title..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-2 uppercase tracking-wide">Content</label>
+                <textarea
+                  className="w-full text-lg font-serif leading-relaxed placeholder:text-gray-300 border border-gray-200 rounded-lg focus:border-black outline-none p-4 transition bg-transparent resize-y min-h-[200px]"
+                  value={editPostForm.content}
+                  onChange={(e) => setEditPostForm({ ...editPostForm, content: e.target.value })}
+                  placeholder="Tell your story..."
+                  rows={10}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-8">
+              <Button
+                variant="ghost"
+                onClick={() => setEditingPost(null)}
+                className="rounded-full"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSavePost}
+                isLoading={isSavingPost}
+                disabled={!editPostForm.title.trim() || !editPostForm.content.trim()}
+                className="rounded-full px-6 bg-green-600 hover:bg-green-700 text-white border-none"
+              >
+                Save changes
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </MainLayout>
   );
 }

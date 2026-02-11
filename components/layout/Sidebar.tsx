@@ -16,7 +16,7 @@ interface SidebarProps {
     onLogout: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentUser, onLogout }) => {
+export const Sidebar: React.FC<SidebarProps & { className?: string; isMobile?: boolean }> = ({ currentUser, onLogout, className = '', isMobile = false }) => {
     const pathname = usePathname();
 
     const navItems = [
@@ -54,13 +54,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentUser, onLogout }) => {
     }
 
     return (
-        <aside className="hidden lg:flex flex-col fixed inset-y-0 left-0 z-50 w-20 xl:w-72 bg-white border-r border-gray-100 transition-all duration-300">
+        <aside className={`${className} bg-white border-r border-gray-100 transition-all duration-300`}>
             <div className="flex flex-col h-full p-4 xl:p-6">
                 {/* Logo */}
                 <div className="mb-10 flex justify-center xl:justify-start">
                     <Link href="/feed" className="block">
-                        <span className="text-3xl xl:hidden">DS</span>
-                        <h1 className="hidden xl:block text-3xl font-black italic tracking-tighter">DevStories</h1>
+                        <span className={`text-3xl ${isMobile ? 'hidden' : 'xl:hidden'}`}>DS</span>
+                        <h1 className={`${isMobile ? 'block' : 'hidden xl:block'} text-3xl font-black italic tracking-tighter`}>DevStories</h1>
                     </Link>
                 </div>
 
@@ -77,7 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentUser, onLogout }) => {
                                 title={item.label}
                             >
                                 <span className={`text-xl group-hover:scale-110 transition-transform ${isActive ? 'text-black' : 'text-gray-500'}`}>{item.icon}</span>
-                                <span className="hidden xl:inline text-lg">{item.label}</span>
+                                <span className={`${isMobile ? 'inline' : 'hidden xl:inline'} text-lg`}>{item.label}</span>
                             </Link>
                         );
                     })}
@@ -92,19 +92,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentUser, onLogout }) => {
                                 <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
                             </svg>
                         </span>
-                        <span className="hidden xl:inline text-lg">Write</span>
+                        <span className={`${isMobile ? 'inline' : 'hidden xl:inline'} text-lg`}>Write</span>
                     </Link>
                 </nav>
 
                 {/* User Profile & Logout */}
-                <div className="mt-auto pt-6 border-t border-gray-100">
-                    <div className="flex flex-col xl:flex-row items-center gap-3">
+                <div className="mt-auto pt-6 border-t border-gray-100 pb-4">
+                    <div className={`flex ${isMobile ? 'flex-row' : 'flex-col xl:flex-row'} items-center gap-3`}>
                         <Avatar
                             src={currentUser?.avatar}
                             fallback={currentUser?.userName || '?'}
                             alt={currentUser?.userName || 'User'}
                         />
-                        <div className="hidden xl:block overflow-hidden">
+                        <div className={`${isMobile ? 'block' : 'hidden xl:block'} overflow-hidden`}>
                             <p className="font-bold text-sm truncate w-32">{currentUser?.userName}</p>
                             <button
                                 onClick={onLogout}
@@ -117,7 +117,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentUser, onLogout }) => {
                     {/* Mobile/Tablet Logout Icon */}
                     <button
                         onClick={onLogout}
-                        className="xl:hidden mt-4 text-red-600 hover:text-red-800 transition flex justify-center w-full"
+                        className={`${isMobile ? 'hidden' : 'xl:hidden'} mt-4 text-red-600 hover:text-red-800 transition flex justify-center w-full`}
                         title="Log out"
                     >
                         🚪
