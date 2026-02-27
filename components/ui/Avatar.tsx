@@ -29,7 +29,7 @@ export const Avatar: React.FC<AvatarProps> = ({
 
     return (
         <div
-            className={`relative inline-flex items-center justify-center rounded-full overflow-hidden bg-gray-100 border border-gray-200 ${sizeClasses[size]} ${className}`}
+            className={`relative inline-flex items-center justify-center rounded-full overflow-hidden bg-gray-100 dark:bg-[#252525] border border-gray-200 dark:border-[#333333] ${sizeClasses[size]} ${className}`}
         >
             {src ? (
                 <Image
@@ -41,7 +41,7 @@ export const Avatar: React.FC<AvatarProps> = ({
                     unoptimized
                 />
             ) : (
-                <span className="font-medium text-gray-600 uppercase tracking-wider">
+                <span className="font-medium text-gray-600 dark:text-[#999999] uppercase tracking-wider">
                     {fallback.slice(0, 2)}
                 </span>
             )}

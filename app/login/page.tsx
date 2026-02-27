@@ -60,9 +60,9 @@ export default function Login() {
           Sign in
         </Button>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-gray-500 dark:text-[#999999] mt-6">
           Don't have an account?
-          <Link href="/register" className="text-green-700 font-bold ml-1 hover:text-green-800">
+          <Link href="/register" className="text-green-700 dark:text-green-400 font-bold ml-1 hover:text-green-800 dark:hover:text-green-300">
             Sign up
           </Link>
         </p>

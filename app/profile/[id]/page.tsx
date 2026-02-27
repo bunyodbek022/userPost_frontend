@@ -9,6 +9,7 @@ import { Avatar } from '../../../components/ui/Avatar';
 import { Button } from '../../../components/ui/Button';
 import { Spinner } from '../../../components/ui/Spinner';
 import { PostCard } from '../../../components/features/PostCard';
+import { FollowButton } from '../../../components/ui/FollowButton';
 
 export default function UserProfileView() {
   const { id } = useParams();
@@ -56,17 +57,23 @@ export default function UserProfileView() {
   const handleLike = async (postId: string) => {
     try {
       await api.post(`/posts/${postId}/like`);
-      // Optimistic update or refetch
-      const updatedPosts = posts.map(p => {
-        if (p._id === postId) {
-          // Toggle logic is complex to replicate exactly without response, so fetching is safer
-          // But let's just refetch posts
-        }
-        return p;
-      });
-      // Simple way:
+      // Simple way: refetch posts to sync UI
+      const postRes = await api.get('/posts', { params: { author: id } });
+      setPosts(postRes.data?.data || postRes.data || []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleRepost = async (postId: string) => {
+    try {
+      if (!currentUser) {
+        toast.error("Please log in to repost");
+        return;
+      }
+      await api.post(`/posts/${postId}/repost`);
       const postRes = await api.get(`/posts`, { params: { author: id } });
-      setPosts(postRes.data?.data || []);
+      setPosts(postRes.data?.data || postRes.data || []);
     } catch (error) {
       console.error(error);
     }
@@ -89,7 +96,7 @@ export default function UserProfileView() {
       setEditingPost(null);
       // Refetch
       const postRes = await api.get('/posts', { params: { author: id } });
-      setPosts(postRes.data?.data || []);
+      setPosts(postRes.data?.data || postRes.data || []);
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to update story");
     } finally {
@@ -123,13 +130,13 @@ export default function UserProfileView() {
       <div className="max-w-7xl mx-auto py-10 px-6 xl:px-0 flex flex-col-reverse lg:flex-row gap-12">
 
         {/* Left: Posts */}
-        <div className="flex-1 max-w-3xl lg:ml-12">
-          <h2 className="text-4xl font-bold font-sans tracking-tight mb-8 hidden lg:block">
+        <div className="flex-1 max-w-2xl lg:ml-auto lg:mr-auto">
+          <h2 className="text-4xl font-bold font-sans tracking-tight mb-8 hidden lg:block dark:text-[#e0e0e0]">
             {targetUser.userName}
           </h2>
 
-          <div className="border-b border-gray-100 mb-8 pb-1">
-            <span className="text-sm font-medium border-b-2 border-black pb-4 -mb-[2px] inline-block">
+          <div className="border-b border-gray-100 dark:border-[#333333] mb-8 pb-1">
+            <span className="text-sm font-medium border-b-2 border-black dark:border-white pb-4 -mb-[2px] inline-block dark:text-[#e0e0e0]">
               Stories
             </span>
           </div>
@@ -141,12 +148,13 @@ export default function UserProfileView() {
                 post={{ ...post, author: targetUser }}
                 currentUser={currentUser}
                 onLike={handleLike}
+                onRepost={handleRepost}
                 onEdit={handleEditPost}
                 onDelete={handleDeletePost}
               />
             )) : (
-              <div className="py-20 text-center bg-gray-50 rounded-lg">
-                <p className="text-gray-500">No stories yet.</p>
+              <div className="py-20 text-center bg-gray-50 dark:bg-[#1f1f1f] rounded-lg">
+                <p className="text-gray-500 dark:text-[#999999]">No stories yet.</p>
               </div>
             )}
           </div>
@@ -163,11 +171,16 @@ export default function UserProfileView() {
               className="w-24 h-24 text-4xl"
             />
             <div>
-              <h2 className="text-xl font-bold font-sans">{targetUser?.userName}</h2>
-              <p className="text-gray-500 text-sm mt-1">
-                {posts.length} Stories · {targetUser?.role === 'admin' ? 'Admin' : 'Writer'}
+              <h2 className="text-xl font-bold font-sans dark:text-[#e0e0e0]">{targetUser?.userName}</h2>
+              <p className="text-gray-500 dark:text-[#999999] text-sm mt-1">
+                {(targetUser?.followers?.length ?? 0)} Followers · {posts.length} Stories · {targetUser?.role === 'admin' ? 'Admin' : 'Writer'}
               </p>
             </div>
+            <FollowButton
+              targetUserId={String(targetUser._id)}
+              currentUser={currentUser}
+              size="md"
+            />
           </div>
         </div>
 
@@ -175,13 +188,13 @@ export default function UserProfileView() {
 
       {/* Edit Modal (reused) */}
       {editingPost && (
-        <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-          <div className="max-w-2xl w-full bg-white shadow-2xl rounded-2xl p-8 border border-gray-100 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-white/90 dark:bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+          <div className="max-w-2xl w-full bg-white dark:bg-[#1f1f1f] shadow-2xl dark:shadow-black/50 rounded-2xl p-8 border border-gray-100 dark:border-[#333333] max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-bold">Edit Story</h2>
+              <h2 className="text-2xl font-bold dark:text-[#e0e0e0]">Edit Story</h2>
               <button
                 onClick={() => setEditingPost(null)}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+                className="text-gray-400 dark:text-[#707070] hover:text-gray-600 dark:hover:text-[#999999] transition-colors p-1"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -191,10 +204,10 @@ export default function UserProfileView() {
 
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-2 uppercase tracking-wide">Title</label>
+                <label className="block text-sm font-medium text-gray-500 dark:text-[#999999] mb-2 uppercase tracking-wide">Title</label>
                 <input
                   type="text"
-                  className="w-full text-2xl font-bold font-serif placeholder:text-gray-300 border-b border-gray-200 focus:border-black outline-none py-3 transition bg-transparent"
+                  className="w-full text-2xl font-bold font-serif placeholder:text-gray-300 dark:placeholder:text-[#707070] border-b border-gray-200 dark:border-[#333333] focus:border-black dark:focus:border-white outline-none py-3 transition bg-transparent text-gray-900 dark:text-[#e0e0e0]"
                   value={editPostForm.title}
                   onChange={(e) => setEditPostForm({ ...editPostForm, title: e.target.value })}
                   placeholder="Story title..."
@@ -202,9 +215,9 @@ export default function UserProfileView() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-2 uppercase tracking-wide">Content</label>
+                <label className="block text-sm font-medium text-gray-500 dark:text-[#999999] mb-2 uppercase tracking-wide">Content</label>
                 <textarea
-                  className="w-full text-lg font-serif leading-relaxed placeholder:text-gray-300 border border-gray-200 rounded-lg focus:border-black outline-none p-4 transition bg-transparent resize-y min-h-[200px]"
+                  className="w-full text-lg font-serif leading-relaxed placeholder:text-gray-300 dark:placeholder:text-[#707070] border border-gray-200 dark:border-[#333333] rounded-lg focus:border-black dark:focus:border-white outline-none p-4 transition bg-transparent text-gray-900 dark:text-[#e0e0e0] resize-y min-h-[200px]"
                   value={editPostForm.content}
                   onChange={(e) => setEditPostForm({ ...editPostForm, content: e.target.value })}
                   placeholder="Tell your story..."

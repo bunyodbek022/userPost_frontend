@@ -116,7 +116,7 @@ export default function PostDetail() {
   if (!post) return (
     <MainLayout currentUser={currentUser}>
       <div className="text-center py-20">
-        <h1 className="text-2xl font-bold">Story not found.</h1>
+        <h1 className="text-2xl font-bold dark:text-[#e0e0e0]">Story not found.</h1>
       </div>
     </MainLayout>
   );
@@ -134,7 +134,7 @@ export default function PostDetail() {
       <article className="max-w-3xl mx-auto py-10 px-6 md:px-0">
         {/* Header / Meta */}
         <div className="mb-10">
-          <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-6 leading-tight tracking-tight font-sans">
+          <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-[#e0e0e0] mb-6 leading-tight tracking-tight font-sans">
             {post.title}
           </h1>
 
@@ -147,10 +147,10 @@ export default function PostDetail() {
                 size="md"
               />
               <div>
-                <div className="font-medium text-gray-900 text-sm">
+                <div className="font-medium text-gray-900 dark:text-[#e0e0e0] text-sm">
                   {post.author?.userName}
                 </div>
-                <div className="text-gray-500 text-xs flex gap-2">
+                <div className="text-gray-500 dark:text-[#999999] text-xs flex gap-2">
                   <span>{date}</span>
                   <span>·</span>
                   <span>4 min read</span>
@@ -158,8 +158,8 @@ export default function PostDetail() {
               </div>
             </div>
 
-            <div className="flex gap-3 text-gray-400">
-              <button className="hover:text-black transition p-1" title="Share link" onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success("Link copied!"); }}>
+            <div className="flex gap-3 text-gray-400 dark:text-[#707070]">
+              <button className="hover:text-black dark:hover:text-white transition p-1" title="Share link" onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success("Link copied!"); }}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935-2.186 2.25 2.25 0 0 0-3.935 2.186Zm0-12.814a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Z" />
                 </svg>
@@ -170,23 +170,23 @@ export default function PostDetail() {
 
         {/* Cover Image */}
         {post.coverImage && (
-          <div className="mb-12 rounded-lg overflow-hidden bg-gray-50 aspect-video">
+          <div className="mb-12 rounded-lg overflow-hidden bg-gray-50 dark:bg-[#1f1f1f] aspect-video">
             <img src={post.coverImage.startsWith('http') ? post.coverImage : `${BACKEND_URL}${post.coverImage}`} alt={post.title} className="w-full h-full object-cover" />
           </div>
         )}
 
         {/* Content */}
-        <div className="prose prose-lg md:prose-xl prose-slate max-w-none font-serif leading-relaxed text-gray-800">
+        <div className="prose prose-lg md:prose-xl prose-slate dark:prose-invert max-w-none font-serif leading-relaxed text-gray-800 dark:text-[#cccccc]">
           <div className="whitespace-pre-wrap">
             {post.content}
           </div>
         </div>
 
         {/* Footer / Tags */}
-        <div className="mt-16 pt-8 border-t border-gray-100">
+        <div className="mt-16 pt-8 border-t border-gray-100 dark:border-[#333333]">
           <div className="flex flex-wrap gap-2 mb-8">
             {post.categories?.map((cat: any) => (
-              <span key={cat._id} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
+              <span key={cat._id} className="bg-gray-100 dark:bg-[#252525] text-gray-700 dark:text-[#999999] px-3 py-1 rounded-full text-sm">
                 {cat.name}
               </span>
             ))}
@@ -195,7 +195,7 @@ export default function PostDetail() {
           <div className="flex items-center gap-6 py-4">
             <button
               onClick={handleLike}
-              className={`flex items-center gap-2 transition ${isLiked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}`}
+              className={`flex items-center gap-2 transition ${isLiked ? 'text-red-500' : 'text-gray-500 dark:text-[#999999] hover:text-red-500'}`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill={isLiked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
@@ -203,7 +203,7 @@ export default function PostDetail() {
               <span className="font-medium text-sm">{post.likes?.length || 0}</span>
             </button>
 
-            <span className="flex items-center gap-2 text-gray-500">
+            <span className="flex items-center gap-2 text-gray-500 dark:text-[#999999]">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785A5.969 5.969 0 0 0 6 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337Z" />
               </svg>
@@ -213,14 +213,14 @@ export default function PostDetail() {
         </div>
 
         {/* Comments Section */}
-        <div className="mt-12 pt-8 border-t border-gray-100">
-          <h3 className="text-xl font-bold font-sans mb-8">
+        <div className="mt-12 pt-8 border-t border-gray-100 dark:border-[#333333]">
+          <h3 className="text-xl font-bold font-sans mb-8 dark:text-[#e0e0e0]">
             Responses ({comments.length})
           </h3>
 
           {/* Comment Input */}
           {currentUser ? (
-            <div className="mb-10 bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+            <div className="mb-10 bg-white dark:bg-[#1f1f1f] border border-gray-200 dark:border-[#333333] rounded-xl p-5 shadow-sm dark:shadow-black/20">
               <div className="flex items-start gap-3">
                 <Avatar
                   src={currentUser?.avatar}
@@ -230,15 +230,15 @@ export default function PostDetail() {
                   className="w-8 h-8 text-xs mt-1"
                 />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900 mb-2">{currentUser?.userName}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-[#e0e0e0] mb-2">{currentUser?.userName}</p>
                   <textarea
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                     placeholder="What are your thoughts?"
                     rows={3}
-                    className="w-full text-sm text-gray-800 placeholder:text-gray-400 border-none outline-none bg-transparent resize-none font-serif leading-relaxed"
+                    className="w-full text-sm text-gray-800 dark:text-[#cccccc] placeholder:text-gray-400 dark:placeholder:text-[#707070] border-none outline-none bg-transparent resize-none font-serif leading-relaxed"
                   />
-                  <div className="flex justify-end pt-2 border-t border-gray-100 mt-2">
+                  <div className="flex justify-end pt-2 border-t border-gray-100 dark:border-[#333333] mt-2">
                     <button
                       onClick={handleSubmitComment}
                       disabled={!commentText.trim() || commentLoading}
@@ -251,8 +251,8 @@ export default function PostDetail() {
               </div>
             </div>
           ) : (
-            <div className="mb-10 bg-gray-50 rounded-xl p-6 text-center">
-              <p className="text-gray-500 text-sm">Please <a href="/login" className="text-green-600 font-medium underline">log in</a> to leave a comment.</p>
+            <div className="mb-10 bg-gray-50 dark:bg-[#1f1f1f] rounded-xl p-6 text-center">
+              <p className="text-gray-500 dark:text-[#999999] text-sm">Please <a href="/login" className="text-green-600 dark:text-green-400 font-medium underline">log in</a> to leave a comment.</p>
             </div>
           )}
 
@@ -262,13 +262,13 @@ export default function PostDetail() {
               <Spinner size="md" />
             </div>
           ) : comments.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
+            <div className="text-center py-12 text-gray-400 dark:text-[#707070]">
               <p className="text-sm">No responses yet. Be the first to share your thoughts!</p>
             </div>
           ) : (
             <div className="space-y-0">
               {comments.map((comment: any) => (
-                <div key={comment._id} className="py-6 border-b border-gray-100 last:border-none">
+                <div key={comment._id} className="py-6 border-b border-gray-100 dark:border-[#333333] last:border-none">
                   <div className="flex items-start gap-3">
                     <Avatar
                       src={comment.author?.avatar}
@@ -280,21 +280,21 @@ export default function PostDetail() {
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm text-gray-900">{comment.author?.userName}</span>
-                          <span className="text-xs text-gray-400">
+                          <span className="font-medium text-sm text-gray-900 dark:text-[#e0e0e0]">{comment.author?.userName}</span>
+                          <span className="text-xs text-gray-400 dark:text-[#707070]">
                             {new Date(comment.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </span>
                         </div>
                         {(currentUser?._id === (comment.author?._id || comment.author) || currentUser?.role === 'admin') && (
                           <button
                             onClick={() => handleDeleteComment(comment._id)}
-                            className="text-gray-400 hover:text-red-500 transition text-xs"
+                            className="text-gray-400 dark:text-[#707070] hover:text-red-500 transition text-xs"
                           >
                             Delete
                           </button>
                         )}
                       </div>
-                      <p className="text-sm text-gray-700 mt-2 font-serif leading-relaxed">
+                      <p className="text-sm text-gray-700 dark:text-[#cccccc] mt-2 font-serif leading-relaxed">
                         {comment.content}
                       </p>
                     </div>

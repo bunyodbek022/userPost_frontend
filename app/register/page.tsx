@@ -119,9 +119,9 @@ export default function Register() {
           Sign up
         </Button>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-gray-500 dark:text-[#999999] mt-6">
           Already have an account?
-          <Link href="/login" className="text-green-700 font-bold ml-1 hover:text-green-800">
+          <Link href="/login" className="text-green-700 dark:text-green-400 font-bold ml-1 hover:text-green-800 dark:hover:text-green-300">
             Sign in
           </Link>
         </p>

@@ -96,9 +96,9 @@ export default function CreatePostPage() {
   return (
     <MainLayout currentUser={currentUser}>
       <div className="max-w-4xl mx-auto py-10 px-6 xl:px-0">
-        <div className="flex items-center justify-between mb-12 border-b border-gray-100 pb-4">
+        <div className="flex items-center justify-between mb-12 border-b border-gray-100 dark:border-[#333333] pb-4">
           <div className="flex items-center gap-3">
-            <span className="text-gray-400 text-sm">Draft in {currentUser?.userName}</span>
+            <span className="text-gray-400 dark:text-[#707070] text-sm">Draft in {currentUser?.userName}</span>
           </div>
           <Button
             onClick={handleSubmit}
@@ -118,7 +118,7 @@ export default function CreatePostPage() {
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="Title"
-              className="w-full text-4xl md:text-5xl font-serif font-bold placeholder:text-gray-300 border-none outline-none bg-transparent"
+              className="w-full text-4xl md:text-5xl font-serif font-bold placeholder:text-gray-300 dark:placeholder:text-[#707070] border-none outline-none bg-transparent text-gray-900 dark:text-[#e0e0e0]"
               autoFocus
             />
           </div>
@@ -126,7 +126,7 @@ export default function CreatePostPage() {
           {/* Image Upload */}
           <div className="group">
             {!imagePreview ? (
-              <label className="flex items-center gap-2 cursor-pointer text-gray-400 hover:text-black transition w-fit">
+              <label className="flex items-center gap-2 cursor-pointer text-gray-400 dark:text-[#707070] hover:text-black dark:hover:text-white transition w-fit">
                 <span className="text-2xl">+</span>
                 <input
                   type="file"
@@ -144,7 +144,7 @@ export default function CreatePostPage() {
                     setImage(null);
                     setImagePreview(null);
                   }}
-                  className="absolute top-4 right-4 bg-white/80 p-2 rounded-full text-red-600 hover:bg-white transition opacity-0 group-hover/img:opacity-100"
+                  className="absolute top-4 right-4 bg-white/80 dark:bg-black/60 p-2 rounded-full text-red-600 hover:bg-white dark:hover:bg-black transition opacity-0 group-hover/img:opacity-100"
                 >
                   ✕
                 </button>
@@ -159,13 +159,13 @@ export default function CreatePostPage() {
               onChange={e => setContent(e.target.value)}
               placeholder="Tell your story..."
               rows={15}
-              className="w-full text-xl font-serif leading-relaxed placeholder:text-gray-300 border-none outline-none bg-transparent resize-y"
+              className="w-full text-xl font-serif leading-relaxed placeholder:text-gray-300 dark:placeholder:text-[#707070] border-none outline-none bg-transparent resize-y text-gray-900 dark:text-[#e0e0e0]"
             />
           </div>
 
           {/* Categories */}
-          <div className="pt-8 border-t border-gray-100">
-            <p className="text-sm font-medium text-gray-500 mb-4 uppercase tracking-wide">Topics</p>
+          <div className="pt-8 border-t border-gray-100 dark:border-[#333333]">
+            <p className="text-sm font-medium text-gray-500 dark:text-[#999999] mb-4 uppercase tracking-wide">Topics</p>
             <div className="flex flex-wrap gap-2">
               {categories.map(cat => (
                 <button
@@ -174,7 +174,7 @@ export default function CreatePostPage() {
                   onClick={() => toggleCategory(cat._id)}
                   className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${selectedCategories.includes(cat._id)
                     ? 'bg-green-600 text-white shadow-sm'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-[#252525] text-gray-500 dark:text-[#999999] hover:bg-gray-200 dark:hover:bg-[#333333]'
                     }`}
                 >
                   {cat.name}

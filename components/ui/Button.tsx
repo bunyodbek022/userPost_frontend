@@ -15,13 +15,13 @@ export const Button: React.FC<ButtonProps> = ({
     disabled,
     ...props
 }) => {
-    const baseStyles = "inline-flex items-center justify-center rounded-full font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2";
+    const baseStyles = "inline-flex items-center justify-center rounded-full font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-[#191919]";
 
     const variants = {
-        primary: "bg-black text-white hover:bg-gray-800 border border-transparent",
-        secondary: "bg-white text-black border border-gray-300 hover:border-gray-800",
-        ghost: "bg-transparent text-gray-600 hover:text-black hover:bg-gray-50",
-        danger: "bg-white text-red-600 border border-red-200 hover:border-red-600 hover:bg-red-50",
+        primary: "bg-black text-white hover:bg-gray-800 border border-transparent dark:bg-white dark:text-black dark:hover:bg-gray-200",
+        secondary: "bg-white text-black border border-gray-300 hover:border-gray-800 dark:bg-[#1f1f1f] dark:text-[#e0e0e0] dark:border-[#333333] dark:hover:border-[#999999]",
+        ghost: "bg-transparent text-gray-600 hover:text-black hover:bg-gray-50 dark:text-[#999999] dark:hover:text-white dark:hover:bg-[#1f1f1f]",
+        danger: "bg-white text-red-600 border border-red-200 hover:border-red-600 hover:bg-red-50 dark:bg-[#1f1f1f] dark:text-red-400 dark:border-red-900 dark:hover:border-red-400 dark:hover:bg-red-950",
     };
 
     const sizes = {
