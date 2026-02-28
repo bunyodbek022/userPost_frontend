@@ -127,10 +127,10 @@ export default function UserProfileView() {
 
   return (
     <MainLayout currentUser={currentUser}>
-      <div className="max-w-7xl mx-auto py-10 px-6 xl:px-0 flex flex-col-reverse lg:flex-row gap-12">
+      <div className="max-w-7xl mx-auto py-10 px-6 xl:px-0 flex flex-col-reverse lg:flex-row justify-center gap-12">
 
         {/* Left: Posts */}
-        <div className="flex-1 max-w-2xl lg:ml-auto lg:mr-auto">
+        <div className="w-full max-w-xl lg:ml-auto lg:mr-auto">
           <h2 className="text-4xl font-bold font-sans tracking-tight mb-8 hidden lg:block dark:text-[#e0e0e0]">
             {targetUser.userName}
           </h2>

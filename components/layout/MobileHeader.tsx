@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '../providers/ThemeProvider';
+import { Logo } from '../ui/Logo';
 
 interface HeaderProps {
     onMenuClick: () => void;
@@ -21,8 +22,8 @@ export const MobileHeader: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 <button onClick={onMenuClick} className="text-2xl text-gray-700 dark:text-[#999999]">
                     ☰
                 </button>
-                <Link href="/feed" className="text-xl font-bold italic tracking-tighter dark:text-[#e0e0e0]">
-                    DevStories
+                <Link href="/feed">
+                    <Logo size="sm" />
                 </Link>
             </div>
 

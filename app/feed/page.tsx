@@ -101,9 +101,9 @@ function FeedContent() {
 
   return (
     <MainLayout currentUser={currentUser}>
-      <div className="flex flex-col lg:flex-row gap-16 py-10 px-4 xl:px-0 max-w-7xl mx-auto">
+      <div className="flex flex-col lg:flex-row justify-center gap-16 py-10 px-4 xl:px-0 max-w-7xl mx-auto">
         {/* Main Feed Column */}
-        <div className="flex-1 max-w-2xl lg:ml-auto lg:mr-auto border-none pr-0 lg:pr-0">
+        <div className="w-full max-w-xl lg:ml-auto lg:mr-auto border-none pr-0 lg:pr-0">
 
           {/* Search Bar */}
           <div className="mb-8 relative">

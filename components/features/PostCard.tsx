@@ -134,19 +134,21 @@ export const PostCard: React.FC<PostCardProps> = ({ post, currentUser, onLike, o
         <article className="border-b border-gray-100 dark:border-[#2a2a2a] py-5 group last:border-none">
             {/* Row 1: Author info */}
             <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2">
                     <Avatar
                         src={post.author?.avatar}
                         fallback={post.author?.userName || '?'}
                         alt={post.author?.userName}
                         size="sm"
-                        className="w-9 h-9 text-sm"
+                        className="w-6 h-6 sm:w-9 sm:h-9 text-[10px] sm:text-xs"
                     />
-                    <div>
-                        <span className="font-semibold text-sm text-gray-900 dark:text-[#e0e0e0]">
+                    <div className="flex items-center gap-2">
+                        <span className="font-bold sm:font-semibold text-[13px] sm:text-sm text-gray-800 dark:text-[#e0e0e0]">
                             {post.author?.userName}
                         </span>
-                        <span className="text-gray-400 dark:text-[#666] text-xs ml-2">{date}</span>
+                        <span className="text-gray-400 dark:text-[#707070] text-[11px] sm:text-xs uppercase sm:normal-case tracking-wide sm:tracking-normal font-medium sm:font-normal sm:ml-2">
+                            {date}
+                        </span>
                     </div>
                 </div>
 
@@ -227,34 +229,72 @@ export const PostCard: React.FC<PostCardProps> = ({ post, currentUser, onLike, o
                 </div>
             </div>
 
-            {/* Row 2: Title (always visible above image) */}
-            <Link href={`/posts/${post._id}`} className="block group-hover:opacity-90 transition-opacity mb-2">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-[#e0e0e0] leading-tight group-hover:underline">
-                    {post.title}
-                </h2>
-            </Link>
+            {/* Row 2: Content Layout (Responsive) */}
+            <div className="sm:block">
+                {/* Mobile version (side-by-side) */}
+                <div className="flex sm:hidden gap-4 mb-4 items-start">
+                    <div className="flex-1 min-w-0">
+                        {/* Title (Mobile) */}
+                        <Link href={`/posts/${post._id}`} className="block hover:opacity-90 transition-opacity mb-2">
+                            <h2 className="text-[17px] font-extrabold text-gray-900 dark:text-[#e0e0e0] leading-snug hover:underline line-clamp-2">
+                                {post.title}
+                            </h2>
+                        </Link>
 
-            {/* Row 3: Cover image (full width, only if exists) */}
-            {coverImageUrl && (
-                <Link href={`/posts/${post._id}`} className="block mb-3 rounded-xl overflow-hidden border border-gray-100 dark:border-[#2a2a2a]">
-                    <img
-                        src={coverImageUrl}
-                        alt={post.title}
-                        className="w-full object-cover max-h-[320px]"
-                    />
-                </Link>
-            )}
+                        {/* Excerpt (Mobile) */}
+                        {post.content && (
+                            <Link href={`/posts/${post._id}`} className="block hover:opacity-90 transition-opacity">
+                                <p className="text-gray-500 dark:text-[#888888] text-sm leading-snug line-clamp-2">
+                                    {post.content?.substring(0, 160) + (post.content?.length > 160 ? '...' : '')}
+                                </p>
+                            </Link>
+                        )}
+                    </div>
 
-            {/* Row 4: Excerpt/Content (below image if image exists, or directly below title) */}
-            {post.content && (
-                <Link href={`/posts/${post._id}`} className="block mb-3 group-hover:opacity-90 transition-opacity">
-                    <p className="text-gray-500 dark:text-[#888888] text-sm leading-relaxed line-clamp-3">
-                        {post.content?.substring(0, 200) + (post.content?.length > 200 ? '...' : '')}
-                    </p>
-                </Link>
-            )}
+                    {/* Thumbnail Image (Right side - Mobile only) */}
+                    {coverImageUrl && (
+                        <Link href={`/posts/${post._id}`} className="block shrink-0 rounded-lg overflow-hidden border border-gray-100 dark:border-[#2a2a2a] w-24 h-24">
+                            <img
+                                src={coverImageUrl}
+                                alt={post.title}
+                                className="w-full h-full object-cover"
+                            />
+                        </Link>
+                    )}
+                </div>
 
-            {/* Row 5: Action bar */}
+                {/* Desktop version (Original stacked layout) */}
+                <div className="hidden sm:block">
+                    {/* Title (Desktop) */}
+                    <Link href={`/posts/${post._id}`} className="block hover:opacity-90 transition-opacity mb-3">
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-[#e0e0e0] leading-tight hover:underline">
+                            {post.title}
+                        </h2>
+                    </Link>
+
+                    {/* Cover image (Full width - Desktop only) */}
+                    {coverImageUrl && (
+                        <Link href={`/posts/${post._id}`} className="block mb-4 rounded-xl overflow-hidden border border-gray-100 dark:border-[#2a2a2a]">
+                            <img
+                                src={coverImageUrl}
+                                alt={post.title}
+                                className="w-full object-cover max-h-[480px]"
+                            />
+                        </Link>
+                    )}
+
+                    {/* Excerpt (Desktop) */}
+                    {post.content && (
+                        <Link href={`/posts/${post._id}`} className="block mb-4 hover:opacity-90 transition-opacity">
+                            <p className="text-gray-500 dark:text-[#888888] text-base leading-relaxed line-clamp-3">
+                                {post.content?.substring(0, 250) + (post.content?.length > 250 ? '...' : '')}
+                            </p>
+                        </Link>
+                    )}
+                </div>
+            </div>
+
+            {/* Row 3: Action bar */}
             <div className="flex items-center gap-6 mt-1">
                 {/* Like */}
                 <button

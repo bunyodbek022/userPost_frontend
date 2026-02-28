@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Avatar } from '../ui/Avatar';
+import { Logo } from '../ui/Logo';
 
 interface User {
     _id: string;
@@ -59,8 +60,7 @@ export const Sidebar: React.FC<SidebarProps & { className?: string; isMobile?: b
                 {/* Logo */}
                 <div className="mb-10 flex justify-center xl:justify-start">
                     <Link href="/feed" className="block">
-                        <span className={`text-3xl ${isMobile ? 'hidden' : 'xl:hidden'} dark:text-[#e0e0e0]`}>DS</span>
-                        <h1 className={`${isMobile ? 'block' : 'hidden xl:block'} text-3xl font-black italic tracking-tighter dark:text-[#e0e0e0]`}>DevStories</h1>
+                        <Logo size={isMobile ? 'md' : 'lg'} />
                     </Link>
                 </div>
 

@@ -1,5 +1,6 @@
-import Link from 'next/link';
 import React from 'react';
+import Link from 'next/link';
+import { Logo } from '../ui/Logo';
 
 interface AdminSidebarProps {
     className?: string;
@@ -10,7 +11,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ className = '', onLi
     return (
         <aside className={`bg-black text-white p-8 flex flex-col ${className}`}>
             <div className="mb-12">
-                <span className="text-2xl font-black tracking-tighter italic">DevStories</span>
+                <Logo size="lg" />
                 <p className="text-[10px] text-gray-500 font-bold tracking-widest uppercase mt-2">Admin Dashboard</p>
             </div>
             <nav className="flex-1 space-y-2">

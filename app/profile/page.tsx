@@ -163,11 +163,11 @@ export default function Profile() {
 
   return (
     <MainLayout currentUser={userData}>
-      <div className="max-w-7xl mx-auto py-10 px-6 xl:px-0 flex flex-col-reverse lg:flex-row gap-12">
+      <div className="max-w-7xl mx-auto py-10 px-6 xl:px-0 flex flex-col-reverse lg:flex-row justify-center gap-12">
 
         {/* Left Column: Posts */}
-        <div className="flex-1 max-w-3xl lg:ml-12">
-          <h2 className="text-4xl font-bold font-sans tracking-tight mb-8 hidden lg:block dark:text-[#e0e0e0]">
+        <div className="w-full max-w-xl lg:ml-auto lg:mr-auto">
+          <h2 className="text-4xl font-extrabold font-sans tracking-tight mb-8 hidden lg:block dark:text-[#e0e0e0]">
             {userData?.userName}
           </h2>
 
@@ -218,8 +218,9 @@ export default function Profile() {
             </div>
 
             <Button
-              variant="ghost"
-              className="text-green-700 dark:text-green-400 text-sm justify-start px-0 hover:bg-transparent hover:text-green-800 dark:hover:text-green-300"
+              variant="substack"
+              size="sm"
+              className="w-full lg:w-fit font-bold"
               onClick={() => setIsEditModalOpen(true)}
             >
               Edit profile
