@@ -19,7 +19,7 @@ export const MobileHeader: React.FC<HeaderProps> = ({ onMenuClick }) => {
     return (
         <header className="lg:hidden sticky top-0 z-40 bg-white/95 dark:bg-[#191919]/95 backdrop-blur-md border-b border-gray-100 dark:border-[#333333] flex items-center justify-between px-4 py-3 h-16 transition-colors">
             <div className="flex items-center gap-4">
-                <button onClick={onMenuClick} className="text-2xl text-gray-700 dark:text-[#999999]">
+                <button onClick={onMenuClick} className="text-2xl text-[var(--ink2)] dark:text-[#999999]">
                     ☰
                 </button>
                 <Link href="/feed">

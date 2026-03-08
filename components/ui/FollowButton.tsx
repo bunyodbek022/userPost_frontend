@@ -72,11 +72,11 @@ export const FollowButton: React.FC<FollowButtonProps> = ({
         ${sizeClasses}
         ${size === 'sm'
                     ? (isFollowing
-                        ? 'text-gray-500 dark:text-[#999999] hover:text-gray-700 dark:hover:text-white'
-                        : 'text-[#ff6719] hover:text-[#e55a16]')
+                        ? 'bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/15'
+                        : 'bg-brand-orange text-white hover:opacity-90')
                     : (isFollowing
-                        ? 'bg-gray-100 dark:bg-[#2a2a2a] text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-[#333333]'
-                        : 'bg-[#ff6719] text-white hover:bg-[#e55a16]')
+                        ? 'bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+                        : 'bg-brand-orange text-white hover:opacity-90')
                 }
         ${loading ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}
       `}

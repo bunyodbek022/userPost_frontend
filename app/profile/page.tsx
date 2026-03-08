@@ -9,11 +9,18 @@ import { Avatar } from '../../components/ui/Avatar';
 import { Button } from '../../components/ui/Button';
 import { Spinner } from '../../components/ui/Spinner';
 import { PostCard } from '../../components/features/PostCard';
+import { FollowButton } from '../../components/ui/FollowButton';
+import { EditPostModal } from '../../components/features/EditPostModal';
+
+type Tab = 'stories' | 'subscriptions' | 'liked';
 
 export default function Profile() {
   const [userData, setUserData] = useState<any>(null);
   const [myPosts, setMyPosts] = useState<any[]>([]);
+  const [likedPosts, setLikedPosts] = useState<any[]>([]);
+  const [following, setFollowing] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<Tab>('stories');
 
   // Edit Profile Modal
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -24,7 +31,6 @@ export default function Profile() {
 
   // Edit Post Modal
   const [editingPost, setEditingPost] = useState<any>(null);
-  const [editPostForm, setEditPostForm] = useState({ title: '', content: '' });
   const [isSavingPost, setIsSavingPost] = useState(false);
 
   const router = useRouter();
@@ -34,7 +40,7 @@ export default function Profile() {
       setLoading(true);
       const [userRes, postsRes] = await Promise.all([
         api.get('/users/profile'),
-        api.get('/posts/my')
+        api.get('/posts/my'),
       ]);
 
       const user = userRes.data.data || userRes.data;
@@ -45,13 +51,25 @@ export default function Profile() {
 
       setEditForm({
         userName: user?.userName || '',
-        age: user?.age || ''
+        age: user?.age || '',
       });
       setAvatarPreview(user?.avatar || null);
       setAvatarFile(null);
 
+      // Fetch following list and liked posts
+      if (user?._id) {
+        const [followingRes, likedRes] = await Promise.all([
+          api.get(`/users/${user._id}/following`),
+          api.get('/posts', { params: { likedBy: user._id } }).catch(() => ({ data: { data: [] } })),
+        ]);
+        setFollowing(followingRes.data?.data || []);
+        // Filter from all posts for liked: use a direct filter from my posts liked array
+        // Since there's no dedicated endpoint, fetch all posts and filter client-side
+        // We'll use a separate distinct approach
+      }
+
     } catch (err: any) {
-      console.error("Profile load error:", err);
+      console.error('Profile load error:', err);
       if (err.response?.status === 401) {
         router.push('/login');
       }
@@ -60,7 +78,31 @@ export default function Profile() {
     }
   }, [router]);
 
+  // Fetch liked posts separately once we have user  
+  const fetchLikedPosts = useCallback(async (userId: string) => {
+    try {
+      // Fetch recent posts and filter ones where userId is in likes array
+      const res = await api.get('/posts', { params: { limit: 50 } });
+      const allPosts: any[] = res.data?.data || res.data || [];
+      const liked = allPosts.filter((p: any) =>
+        Array.isArray(p.likes) && p.likes.some((id: any) => String(id) === String(userId))
+      );
+      setLikedPosts(liked);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    if (userData?._id) {
+      api.get(`/users/${userData._id}/following`).then(res => {
+        setFollowing(res.data?.data || []);
+      }).catch(() => { });
+      fetchLikedPosts(userData._id);
+    }
+  }, [userData?._id, fetchLikedPosts]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -77,20 +119,17 @@ export default function Profile() {
       const formData = new FormData();
       formData.append('userName', editForm.userName);
       formData.append('age', editForm.age);
-      if (avatarFile) {
-        formData.append('avatar', avatarFile);
-      }
+      if (avatarFile) formData.append('avatar', avatarFile);
 
       const res = await api.patch(`/users/${userData._id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       const updatedUser = res.data.data || res.data;
-
       setUserData(updatedUser);
       setIsEditModalOpen(false);
-      toast.success("Profile updated successfully");
+      toast.success('Profile updated successfully');
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to update profile");
+      toast.error(err.response?.data?.message || 'Failed to update profile');
     } finally {
       setIsValidating(false);
     }
@@ -107,10 +146,7 @@ export default function Profile() {
 
   const handleRepost = async (postId: string) => {
     try {
-      if (!userData) {
-        toast.error("Please log in to repost");
-        return;
-      }
+      if (!userData) { toast.error('Please log in to repost'); return; }
       await api.post(`/posts/${postId}/repost`);
       fetchData();
     } catch (error) {
@@ -118,38 +154,32 @@ export default function Profile() {
     }
   };
 
-  // --- Post Edit ---
   const handleEditPost = (post: any) => {
     setEditingPost(post);
-    setEditPostForm({
-      title: post.title || '',
-      content: post.content || '',
-    });
   };
 
-  const handleSavePost = async () => {
+  const handleSavePost = async (data: { title: string; content: string }) => {
     if (!editingPost?._id) return;
     try {
       setIsSavingPost(true);
-      await api.patch(`/posts/${editingPost._id}`, editPostForm);
-      toast.success("Story updated successfully");
+      await api.patch(`/posts/${editingPost._id}`, data);
+      toast.success('Story updated successfully');
       setEditingPost(null);
       fetchData();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to update story");
+      toast.error(err.response?.data?.message || 'Failed to update story');
     } finally {
       setIsSavingPost(false);
     }
   };
 
-  // --- Post Delete ---
   const handleDeletePost = async (postId: string) => {
     try {
       await api.delete(`/posts/${postId}`);
-      toast.success("Story deleted successfully");
+      toast.success('Story deleted successfully');
       setMyPosts(prev => prev.filter(p => p._id !== postId));
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to delete story");
+      toast.error(err.response?.data?.message || 'Failed to delete story');
     }
   };
 
@@ -161,27 +191,99 @@ export default function Profile() {
     </MainLayout>
   );
 
+  const tabs: { key: Tab; label: string; count: number }[] = [
+    { key: 'stories', label: 'Stories', count: myPosts.length },
+    { key: 'subscriptions', label: 'Subscriptions', count: following.length },
+    { key: 'liked', label: 'Liked', count: likedPosts.length },
+  ];
+
   return (
     <MainLayout currentUser={userData}>
-      <div className="max-w-7xl mx-auto py-10 px-6 xl:px-0 flex flex-col-reverse lg:flex-row justify-center gap-12">
+      <div className="max-w-2xl mx-auto px-4 pb-16">
 
-        {/* Left Column: Posts */}
-        <div className="w-full max-w-xl lg:ml-auto lg:mr-auto">
-          <h2 className="text-4xl font-extrabold font-sans tracking-tight mb-8 hidden lg:block dark:text-[#e0e0e0]">
-            {userData?.userName}
-          </h2>
-
-          <div className="border-b border-gray-100 dark:border-[#333333] mb-8 pb-1">
-            <button className="text-sm font-medium border-b-2 border-black dark:border-white pb-4 -mb-[2px] dark:text-[#e0e0e0]">
-              Stories
-            </button>
+        {/* ── Instagram-style Header ── */}
+        <div className="flex flex-col items-center pt-10 pb-6">
+          {/* Avatar */}
+          <div className="relative group cursor-pointer mb-4">
+            <Avatar
+              src={userData?.avatar}
+              fallback={userData?.userName || '?'}
+              alt={userData?.userName}
+              size="xl"
+              className="w-24 h-24 text-4xl ring-2 ring-gray-200 dark:ring-[#333] ring-offset-2 ring-offset-white dark:ring-offset-[#121212]"
+            />
           </div>
 
+          {/* Username */}
+          <h1 className="text-2xl font-bold font-sans dark:text-[#e0e0e0] mb-1">
+            {userData?.userName}
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-[#888] mb-4">
+            {userData?.role === 'admin' ? '🛡 Admin' : 'Writer'}
+          </p>
+
+          {/* Stats Row */}
+          <div className="flex items-center gap-8 mb-5">
+            <div className="text-center">
+              <p className="text-lg font-bold dark:text-[#e0e0e0]">{myPosts.length}</p>
+              <p className="text-xs text-gray-500 dark:text-[#888] uppercase tracking-wide">Stories</p>
+            </div>
+            <div className="w-px h-8 bg-gray-200 dark:bg-[#333]" />
+            <div className="text-center">
+              <p className="text-lg font-bold dark:text-[#e0e0e0]">{following.length}</p>
+              <p className="text-xs text-gray-500 dark:text-[#888] uppercase tracking-wide">Subscriptions</p>
+            </div>
+            <div className="w-px h-8 bg-gray-200 dark:bg-[#333]" />
+            <div className="text-center">
+              <p className="text-lg font-bold dark:text-[#e0e0e0]">{userData?.followers?.length ?? 0}</p>
+              <p className="text-xs text-gray-500 dark:text-[#888] uppercase tracking-wide">Followers</p>
+            </div>
+          </div>
+
+          {/* Edit Profile Button */}
+          <Button
+            variant="substack"
+            size="sm"
+            className="px-8 font-semibold rounded-full"
+            onClick={() => setIsEditModalOpen(true)}
+          >
+            Edit profile
+          </Button>
+        </div>
+
+        {/* ── Tabs ── */}
+        <div className="border-b border-gray-200 dark:border-[#333] mb-6">
+          <div className="flex">
+            {tabs.map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex-1 py-3 text-sm font-medium transition-colors relative ${activeTab === tab.key
+                  ? 'text-black dark:text-white'
+                  : 'text-gray-400 dark:text-[#666] hover:text-gray-700 dark:hover:text-[#aaa]'
+                  }`}
+              >
+                {tab.label}
+                {tab.count > 0 && (
+                  <span className="ml-1.5 text-xs text-gray-400 dark:text-[#666]">({tab.count})</span>
+                )}
+                {activeTab === tab.key && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-black dark:bg-white rounded-full" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Tab Content ── */}
+
+        {/* STORIES TAB */}
+        {activeTab === 'stories' && (
           <div className="space-y-2">
             {myPosts.length > 0 ? myPosts.map(post => (
               <PostCard
                 key={post._id}
-                post={{ ...post, author: userData }}
+                post={post}
                 currentUser={userData}
                 onLike={handleLike}
                 onRepost={handleRepost}
@@ -189,7 +291,7 @@ export default function Profile() {
                 onDelete={handleDeletePost}
               />
             )) : (
-              <div className="py-20 text-center bg-gray-50 dark:bg-[#1f1f1f] rounded-lg">
+              <div className="py-20 text-center bg-gray-50 dark:bg-[#1f1f1f] rounded-xl">
                 <p className="text-gray-500 dark:text-[#999999] mb-4">You haven't written any stories yet.</p>
                 <Link href="/create-post" className="text-black dark:text-white font-medium underline">
                   Write your first story
@@ -197,44 +299,93 @@ export default function Profile() {
               </div>
             )}
           </div>
-        </div>
+        )}
 
-        {/* Right Column: User Info (Sticky) */}
-        <div className="w-full lg:w-80 h-fit lg:sticky lg:top-10">
-          <div className="flex flex-col gap-6">
-            <Avatar
-              src={userData?.avatar}
-              fallback={userData?.userName || '?'}
-              alt={userData?.userName}
-              size="xl"
-              className="w-24 h-24 text-4xl"
-            />
-
-            <div>
-              <h2 className="text-xl font-bold font-sans dark:text-[#e0e0e0]">{userData?.userName}</h2>
-              <p className="text-gray-500 dark:text-[#999999] text-sm mt-1">
-                {myPosts.length} Stories · {userData?.role === 'admin' ? 'Admin' : 'Writer'}
-              </p>
-            </div>
-
-            <Button
-              variant="substack"
-              size="sm"
-              className="w-full lg:w-fit font-bold"
-              onClick={() => setIsEditModalOpen(true)}
-            >
-              Edit profile
-            </Button>
+        {/* SUBSCRIPTIONS TAB */}
+        {activeTab === 'subscriptions' && (
+          <div>
+            {following.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {following.map((user: any) => (
+                  <div
+                    key={user._id}
+                    className="flex items-center justify-between p-4 bg-white dark:bg-[#1f1f1f] border border-gray-100 dark:border-[#333] rounded-xl hover:border-gray-300 dark:hover:border-[#555] transition-all"
+                  >
+                    <Link href={`/profile/${user._id}`} className="flex items-center gap-3 min-w-0">
+                      <Avatar
+                        src={user.avatar}
+                        fallback={user.userName || '?'}
+                        alt={user.userName}
+                        size="sm"
+                        className="w-11 h-11 text-lg flex-shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm dark:text-[#e0e0e0] truncate">{user.userName}</p>
+                        <p className="text-xs text-gray-400 dark:text-[#666]">
+                          {user.role === 'admin' ? 'Admin' : 'Writer'}
+                        </p>
+                      </div>
+                    </Link>
+                    <div className="ml-3 flex-shrink-0">
+                      <FollowButton
+                        targetUserId={String(user._id)}
+                        currentUser={userData}
+                        size="sm"
+                        onToggle={() => {
+                          // Refresh following list
+                          if (userData?._id) {
+                            api.get(`/users/${userData._id}/following`).then(res => {
+                              setFollowing(res.data?.data || []);
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-20 text-center bg-gray-50 dark:bg-[#1f1f1f] rounded-xl">
+                <p className="text-gray-500 dark:text-[#999] mb-2">You haven't subscribed to anyone yet.</p>
+                <p className="text-sm text-gray-400 dark:text-[#666]">
+                  Explore stories and follow writers you like.
+                </p>
+              </div>
+            )}
           </div>
-        </div>
+        )}
+
+        {/* LIKED TAB */}
+        {activeTab === 'liked' && (
+          <div className="space-y-2">
+            {likedPosts.length > 0 ? likedPosts.map(post => (
+              <PostCard
+                key={post._id}
+                post={post}
+                currentUser={userData}
+                onLike={handleLike}
+                onRepost={handleRepost}
+                onEdit={handleEditPost}
+                onDelete={handleDeletePost}
+              />
+            )) : (
+              <div className="py-20 text-center bg-gray-50 dark:bg-[#1f1f1f] rounded-xl">
+                <p className="text-gray-500 dark:text-[#999] mb-2">No liked stories yet.</p>
+                <p className="text-sm text-gray-400 dark:text-[#666]">
+                  Stories you like will appear here.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
 
-      {/* EDIT PROFILE MODAL */}
+      {/* ── EDIT PROFILE MODAL ── */}
       {isEditModalOpen && (
         <div className="fixed inset-0 bg-white/90 dark:bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-          <div className="max-w-lg w-full bg-white dark:bg-[#1f1f1f] shadow-2xl dark:shadow-black/50 rounded-2xl p-8 border border-gray-100 dark:border-[#333333]">
+          <div className="max-w-lg w-full bg-white dark:bg-[#1f1f1f] shadow-2xl dark:shadow-black/50 rounded-2xl p-8 border border-gray-100 dark:border-[#333]">
             <h2 className="text-2xl font-bold mb-8 dark:text-[#e0e0e0]">Profile Information</h2>
-
             <div className="space-y-6">
               <div className="flex justify-center mb-6">
                 <div className="relative group cursor-pointer">
@@ -243,7 +394,7 @@ export default function Profile() {
                     fallback={editForm.userName || '?'}
                     alt="Profile Preview"
                     size="xl"
-                    className="w-24 h-24 text-4xl border border-gray-200 dark:border-[#333333] object-cover"
+                    className="w-24 h-24 text-4xl border border-gray-200 dark:border-[#333] object-cover"
                   />
                   <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <label htmlFor="avatar-upload" className="cursor-pointer text-white text-xs font-medium">
@@ -259,41 +410,30 @@ export default function Profile() {
                   />
                 </div>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-[#999999] mb-2">Name</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-[#999] mb-2">Name</label>
                 <input
                   type="text"
-                  className="w-full border-b border-gray-300 dark:border-[#333333] focus:border-black dark:focus:border-white outline-none py-2 text-lg transition bg-transparent text-gray-900 dark:text-[#e0e0e0]"
+                  className="w-full border-b border-gray-300 dark:border-[#333] focus:border-black dark:focus:border-white outline-none py-2 text-lg transition bg-transparent text-gray-900 dark:text-[#e0e0e0]"
                   value={editForm.userName}
                   onChange={(e) => setEditForm({ ...editForm, userName: e.target.value })}
                 />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-[#999999] mb-2">Age</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-[#999] mb-2">Age</label>
                 <input
                   type="number"
-                  className="w-full border-b border-gray-300 dark:border-[#333333] focus:border-black dark:focus:border-white outline-none py-2 text-lg transition bg-transparent text-gray-900 dark:text-[#e0e0e0]"
+                  className="w-full border-b border-gray-300 dark:border-[#333] focus:border-black dark:focus:border-white outline-none py-2 text-lg transition bg-transparent text-gray-900 dark:text-[#e0e0e0]"
                   value={editForm.age}
                   onChange={(e) => setEditForm({ ...editForm, age: e.target.value })}
                 />
               </div>
             </div>
-
             <div className="flex justify-end gap-3 mt-10">
-              <Button
-                variant="ghost"
-                onClick={() => setIsEditModalOpen(false)}
-                className="rounded-full"
-              >
+              <Button variant="ghost" onClick={() => setIsEditModalOpen(false)} className="rounded-full">
                 Cancel
               </Button>
-              <Button
-                onClick={handleSaveProfile}
-                isLoading={isValidating}
-                className="rounded-full px-6"
-              >
+              <Button onClick={handleSaveProfile} isLoading={isValidating} className="rounded-full px-6">
                 Save
               </Button>
             </div>
@@ -301,65 +441,13 @@ export default function Profile() {
         </div>
       )}
 
-      {/* EDIT POST MODAL */}
       {editingPost && (
-        <div className="fixed inset-0 bg-white/90 dark:bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-          <div className="max-w-2xl w-full bg-white dark:bg-[#1f1f1f] shadow-2xl dark:shadow-black/50 rounded-2xl p-8 border border-gray-100 dark:border-[#333333] max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-bold dark:text-[#e0e0e0]">Edit Story</h2>
-              <button
-                onClick={() => setEditingPost(null)}
-                className="text-gray-400 dark:text-[#707070] hover:text-gray-600 dark:hover:text-[#999999] transition-colors p-1"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-[#999999] mb-2 uppercase tracking-wide">Title</label>
-                <input
-                  type="text"
-                  className="w-full text-2xl font-bold font-serif placeholder:text-gray-300 dark:placeholder:text-[#707070] border-b border-gray-200 dark:border-[#333333] focus:border-black dark:focus:border-white outline-none py-3 transition bg-transparent text-gray-900 dark:text-[#e0e0e0]"
-                  value={editPostForm.title}
-                  onChange={(e) => setEditPostForm({ ...editPostForm, title: e.target.value })}
-                  placeholder="Story title..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-[#999999] mb-2 uppercase tracking-wide">Content</label>
-                <textarea
-                  className="w-full text-lg font-serif leading-relaxed placeholder:text-gray-300 dark:placeholder:text-[#707070] border border-gray-200 dark:border-[#333333] rounded-lg focus:border-black dark:focus:border-white outline-none p-4 transition bg-transparent text-gray-900 dark:text-[#e0e0e0] resize-y min-h-[200px]"
-                  value={editPostForm.content}
-                  onChange={(e) => setEditPostForm({ ...editPostForm, content: e.target.value })}
-                  placeholder="Tell your story..."
-                  rows={10}
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-8">
-              <Button
-                variant="ghost"
-                onClick={() => setEditingPost(null)}
-                className="rounded-full"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSavePost}
-                isLoading={isSavingPost}
-                disabled={!editPostForm.title.trim() || !editPostForm.content.trim()}
-                className="rounded-full px-6 bg-green-600 hover:bg-green-700 text-white border-none"
-              >
-                Save changes
-              </Button>
-            </div>
-          </div>
-        </div>
+        <EditPostModal
+          post={editingPost}
+          onClose={() => setEditingPost(null)}
+          onSave={handleSavePost}
+          isLoading={isSavingPost}
+        />
       )}
     </MainLayout>
   );

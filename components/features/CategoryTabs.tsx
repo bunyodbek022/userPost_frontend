@@ -8,26 +8,32 @@ interface CategoryTabsProps {
 
 export const CategoryTabs: React.FC<CategoryTabsProps> = ({ categories, currentCategory, onSelect }) => {
     return (
-        <div className="flex items-center gap-6 overflow-x-auto border-b border-gray-100 dark:border-[#333333] pb-4 mb-8 sticky top-0 bg-white dark:bg-[#191919] z-10 pt-4 scrollbar-hide transition-colors">
+        <div className="flex items-center gap-8 overflow-x-auto border-b border-gray-100 dark:border-[#2a2a2a] pb-0 mb-8 sticky top-0 bg-white dark:bg-[#0f0f0f] z-10 pt-4 scrollbar-hide transition-colors font-sans">
             <button
                 onClick={() => onSelect('All')}
-                className={`whitespace-nowrap pb-1 border-b-2 text-sm transition-colors ${currentCategory === 'All'
-                    ? 'border-black dark:border-white text-black dark:text-white font-medium'
-                    : 'border-transparent text-gray-500 dark:text-[#999999] hover:text-black dark:hover:text-white'
+                className={`whitespace-nowrap pb-3 border-b-2 text-sm transition-all duration-300 relative group ${currentCategory === 'All'
+                    ? 'border-brand-orange text-brand-orange dark:text-brand-orange dark:border-brand-orange font-bold'
+                    : 'border-transparent text-gray-500 dark:text-[#999999] hover:text-gray-900 dark:hover:text-white hover:border-gray-200 dark:hover:border-[#444]'
                     }`}
             >
                 For you
+                {currentCategory === 'All' && (
+                    <span className="absolute inset-x-0 -bottom-0.5 h-0.5 bg-brand-orange rounded-full animate-in fade-in zoom-in-95 duration-300" />
+                )}
             </button>
             {categories.map((cat) => (
                 <button
                     key={cat._id || cat.name}
                     onClick={() => onSelect(cat.name)}
-                    className={`whitespace-nowrap pb-1 border-b-2 text-sm transition-colors ${currentCategory === cat.name
-                        ? 'border-black dark:border-white text-black dark:text-white font-medium'
-                        : 'border-transparent text-gray-500 dark:text-[#999999] hover:text-black dark:hover:text-white'
+                    className={`whitespace-nowrap pb-3 border-b-2 text-sm transition-all duration-300 relative group ${currentCategory === cat.name
+                        ? 'border-brand-orange text-brand-orange dark:text-brand-orange dark:border-brand-orange font-bold'
+                        : 'border-transparent text-gray-500 dark:text-[#999999] hover:text-gray-900 dark:hover:text-white hover:border-gray-200 dark:hover:border-[#444]'
                         }`}
                 >
                     {cat.name}
+                    {currentCategory === cat.name && (
+                        <span className="absolute inset-x-0 -bottom-0.5 h-0.5 bg-brand-orange rounded-full animate-in fade-in zoom-in-95 duration-300" />
+                    )}
                 </button>
             ))}
         </div>

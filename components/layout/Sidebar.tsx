@@ -1,3 +1,4 @@
+"use client";
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -15,9 +16,18 @@ interface User {
 interface SidebarProps {
     currentUser: User | null;
     onLogout: () => void;
+    isCollapsed?: boolean;
+    onToggleCollapse?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps & { className?: string; isMobile?: boolean }> = ({ currentUser, onLogout, className = '', isMobile = false }) => {
+export const Sidebar: React.FC<SidebarProps & { className?: string; isMobile?: boolean }> = ({
+    currentUser,
+    onLogout,
+    isCollapsed = false,
+    onToggleCollapse,
+    className = '',
+    isMobile = false
+}) => {
     const pathname = usePathname();
 
     const navItems = [
@@ -39,6 +49,15 @@ export const Sidebar: React.FC<SidebarProps & { className?: string; isMobile?: b
                 </svg>
             )
         },
+        {
+            href: '/bookmarks',
+            label: 'Reading List',
+            icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
+                </svg>
+            )
+        },
     ];
 
     if (currentUser?.role === 'admin') {
@@ -55,76 +74,62 @@ export const Sidebar: React.FC<SidebarProps & { className?: string; isMobile?: b
     }
 
     return (
-        <aside className={`${className} bg-white dark:bg-[#191919] border-r border-gray-100 dark:border-[#333333] transition-all duration-300`}>
-            <div className="flex flex-col h-full p-4 xl:p-6">
-                {/* Logo */}
-                <div className="mb-10 flex justify-center xl:justify-start">
-                    <Link href="/feed" className="block">
-                        <Logo size={isMobile ? 'md' : 'lg'} />
-                    </Link>
-                </div>
-
+        <aside className={`${className} bg-white dark:bg-[#0f0f0f] border-r border-gray-100 dark:border-[#2a2a2a] transition-all duration-300`}>
+            <div className="flex flex-col h-full p-4 lg:p-6">
                 {/* Navigation */}
-                <nav className="flex-1 space-y-2">
+                <nav className="flex-1 space-y-2 mt-4">
                     {navItems.map((item) => {
                         const isActive = pathname === item.href;
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`flex items-center gap-4 px-3 xl:px-4 py-3 rounded-full transition-all group ${isActive
-                                    ? 'bg-gray-100 dark:bg-[#252525] font-semibold'
-                                    : 'text-gray-600 dark:text-[#999999] hover:bg-gray-50 dark:hover:bg-[#1f1f1f] hover:text-black dark:hover:text-white'
+                                className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive
+                                    ? 'bg-gray-50 dark:bg-white/5 text-[#292929] dark:text-white font-semibold shadow-sm'
+                                    : 'text-[#757575] dark:text-[#999999] hover:bg-gray-50 dark:hover:bg-white/5 hover:text-[#292929] dark:hover:text-white'
                                     }`}
                                 title={item.label}
                             >
-                                <span className={`text-xl group-hover:scale-110 transition-transform ${isActive ? 'text-black dark:text-white' : 'text-gray-500 dark:text-[#999999]'}`}>{item.icon}</span>
-                                <span className={`${isMobile ? 'inline' : 'hidden xl:inline'} text-lg dark:text-[#e0e0e0]`}>{item.label}</span>
+                                <span className={`transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>{item.icon}</span>
+                                <span className="text-[15px] tracking-tight">{item.label}</span>
                             </Link>
                         );
                     })}
 
                     <Link
                         href="/create-post"
-                        className="flex items-center gap-4 px-3 xl:px-4 py-3 rounded-full text-gray-600 dark:text-[#999999] hover:bg-gray-50 dark:hover:bg-[#1f1f1f] hover:text-black dark:hover:text-white mt-4 group"
+                        className="flex items-center justify-center gap-2.5 px-6 py-3 rounded-full bg-brand-orange hover:bg-brand-orange/90 text-white mt-10 transition-all duration-300 group shadow-lg shadow-brand-orange/20 hover:scale-[1.02] active:scale-[0.98]"
                         title="Write"
                     >
-                        <span className="text-xl group-hover:scale-110 transition-transform text-gray-500 dark:text-[#999999]">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                        <span className="text-xl">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-label="Write">
+                                <path d="M14 4a.5.5 0 0 0 0-1v1zm7 6a.5.5 0 0 0-1 0h1zm-7-7H4v1h10V3zM3 4v16h1V4H3zm1 17h16v-1H4v1zm17-1V10h-1v10h1zm-1 1a1 1 0 0 0 1-1h-1v1zM3 20a1 1 0 0 0 1-1v-1H3zM4 3a1 1 0 0 0-1 1h1V3z" fill="currentColor"></path>
+                                <path d="M17.5 4.5l-8.46 8.46a.25.25 0 0 0-.06.1l-.6 2.1c-.07.25.17.49.42.42l2.1-.6a.25.25 0 0 0 .1-.06l8.46-8.46a1.5 1.5 0 0 0-2.1-2.1l-.06.1z" stroke="currentColor" strokeLinecap="round"></path>
                             </svg>
                         </span>
-                        <span className={`${isMobile ? 'inline' : 'hidden xl:inline'} text-lg`}>Write</span>
+                        <span className="text-[15px] font-bold">Write</span>
                     </Link>
-
                 </nav>
 
                 {/* User Profile & Logout */}
-                <div className="mt-auto pt-6 border-t border-gray-100 dark:border-[#333333] pb-4">
-                    <div className={`flex ${isMobile ? 'flex-row' : 'flex-col xl:flex-row'} items-center gap-3`}>
+                <div className="mt-auto pt-6 border-t border-gray-100 dark:border-[#2a2a2a] pb-4">
+                    <div className="flex items-center gap-3 px-2">
                         <Avatar
                             src={currentUser?.avatar}
                             fallback={currentUser?.userName || '?'}
                             alt={currentUser?.userName || 'User'}
+                            size="sm"
                         />
-                        <div className={`${isMobile ? 'block' : 'hidden xl:block'} overflow-hidden`}>
-                            <p className="font-bold text-sm truncate w-32 dark:text-[#e0e0e0]">{currentUser?.userName}</p>
+                        <div className="overflow-hidden flex-1">
+                            <p className="font-bold text-sm truncate dark:text-[#e0e0e0] leading-tight">{currentUser?.userName}</p>
                             <button
                                 onClick={onLogout}
-                                className="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition"
+                                className="text-xs text-[#757575] hover:text-[#292929] dark:text-[#999999] dark:hover:text-white transition"
                             >
-                                Log out
+                                Sign out
                             </button>
                         </div>
                     </div>
-                    {/* Mobile/Tablet Logout Icon */}
-                    <button
-                        onClick={onLogout}
-                        className={`${isMobile ? 'hidden' : 'xl:hidden'} mt-4 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition flex justify-center w-full`}
-                        title="Log out"
-                    >
-                        🚪
-                    </button>
                 </div>
             </div>
         </aside>

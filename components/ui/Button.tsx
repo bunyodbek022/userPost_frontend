@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'substack';
+    variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'substack' | 'orange' | 'green' | 'black';
     size?: 'sm' | 'md' | 'lg';
     isLoading?: boolean;
 }
@@ -18,11 +18,14 @@ export const Button: React.FC<ButtonProps> = ({
     const baseStyles = "inline-flex items-center justify-center rounded-full font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-[#191919]";
 
     const variants = {
-        primary: "bg-black text-white hover:bg-gray-800 border border-transparent dark:bg-white dark:text-black dark:hover:bg-gray-200",
-        secondary: "bg-white text-black border border-gray-300 hover:border-gray-800 dark:bg-[#1f1f1f] dark:text-[#e0e0e0] dark:border-[#333333] dark:hover:border-[#999999]",
-        ghost: "bg-transparent text-gray-600 hover:text-black hover:bg-gray-50 dark:text-[#999999] dark:hover:text-white dark:hover:bg-[#1f1f1f]",
+        primary: "bg-[#3B82F6] text-white hover:bg-[#2563EB] border border-transparent shadow-sm dark:bg-[#3B82F6] dark:text-white dark:hover:bg-[#2563EB]",
+        secondary: "bg-white text-gray-800 border border-gray-300 hover:border-gray-500 hover:bg-gray-50 dark:bg-[#1f1f1f] dark:text-[#e0e0e0] dark:border-[#333333] dark:hover:border-[#999999]",
+        ghost: "bg-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-[#999999] dark:hover:text-white dark:hover:bg-[#1f1f1f]",
         danger: "bg-white text-red-600 border border-red-200 hover:border-red-600 hover:bg-red-50 dark:bg-[#1f1f1f] dark:text-red-400 dark:border-red-900 dark:hover:border-red-400 dark:hover:bg-red-950",
-        substack: "bg-[#ff6719] text-white hover:bg-[#e55a16] border border-transparent shadow-sm",
+        substack: "bg-[#EF4400] text-white hover:bg-[#D93D00] border border-transparent shadow-sm",
+        orange: "bg-[#EF4400] text-white hover:bg-[#D93D00] border border-transparent shadow-sm",
+        green: "bg-[#1E7D4E] text-white hover:bg-[#16643F] border border-transparent shadow-sm",
+        black: "bg-[#0F1111] text-white hover:bg-[#000000] border border-transparent shadow-sm",
     };
 
     const sizes = {

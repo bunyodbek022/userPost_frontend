@@ -10,6 +10,9 @@ import { Button } from '../../../components/ui/Button';
 import { Spinner } from '../../../components/ui/Spinner';
 import { PostCard } from '../../../components/features/PostCard';
 import { FollowButton } from '../../../components/ui/FollowButton';
+import { EditPostModal } from '../../../components/features/EditPostModal';
+
+type Tab = 'stories' | 'subscriptions' | 'followers';
 
 export default function UserProfileView() {
   const { id } = useParams();
@@ -18,30 +21,41 @@ export default function UserProfileView() {
   const [targetUser, setTargetUser] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [following, setFollowing] = useState<any[]>([]);
+  const [followers, setFollowers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<Tab>('stories');
 
-  // Edit Post Modal state (for Admin)
+  // Edit Post Modal state (for Admin/Owner)
   const [editingPost, setEditingPost] = useState<any>(null);
-  const [editPostForm, setEditPostForm] = useState({ title: '', content: '' });
   const [isSavingPost, setIsSavingPost] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const [currentUserRes, targetUserRes, postsRes] = await Promise.all([
-        api.get('/users/profile').catch(() => ({ data: null })), // If not logged in, null
+        api.get('/users/profile').catch(() => ({ data: null })),
         api.get(`/users/${id}`),
-        api.get('/posts', { params: { author: id } })
+        api.get('/posts', { params: { author: id } }),
       ]);
 
       setCurrentUser(currentUserRes.data?.data || currentUserRes.data);
-      setTargetUser(targetUserRes.data?.data || targetUserRes.data);
+      const user = targetUserRes.data?.data || targetUserRes.data;
+      setTargetUser(user);
       setPosts(postsRes.data?.data || postsRes.data || []);
 
+      // Fetch following and followers lists
+      const [followingRes, followersRes] = await Promise.all([
+        api.get(`/users/${id}/following`),
+        api.get(`/users/${id}/followers`),
+      ]);
+      setFollowing(followingRes.data?.data || []);
+      setFollowers(followersRes.data?.data || []);
+
     } catch (err: any) {
-      console.error("Profile load error:", err);
+      console.error('Profile load error:', err);
       if (err.response?.status === 404) {
-        toast.error("User not found");
+        toast.error('User not found');
         router.push('/');
       }
     } finally {
@@ -53,11 +67,9 @@ export default function UserProfileView() {
     if (id) fetchData();
   }, [id, fetchData]);
 
-  // Actions
   const handleLike = async (postId: string) => {
     try {
       await api.post(`/posts/${postId}/like`);
-      // Simple way: refetch posts to sync UI
       const postRes = await api.get('/posts', { params: { author: id } });
       setPosts(postRes.data?.data || postRes.data || []);
     } catch (error) {
@@ -67,12 +79,9 @@ export default function UserProfileView() {
 
   const handleRepost = async (postId: string) => {
     try {
-      if (!currentUser) {
-        toast.error("Please log in to repost");
-        return;
-      }
+      if (!currentUser) { toast.error('Please log in to repost'); return; }
       await api.post(`/posts/${postId}/repost`);
-      const postRes = await api.get(`/posts`, { params: { author: id } });
+      const postRes = await api.get('/posts', { params: { author: id } });
       setPosts(postRes.data?.data || postRes.data || []);
     } catch (error) {
       console.error(error);
@@ -81,24 +90,19 @@ export default function UserProfileView() {
 
   const handleEditPost = (post: any) => {
     setEditingPost(post);
-    setEditPostForm({
-      title: post.title || '',
-      content: post.content || '',
-    });
   };
 
-  const handleSavePost = async () => {
+  const handleSavePost = async (data: { title: string; content: string }) => {
     if (!editingPost?._id) return;
     try {
       setIsSavingPost(true);
-      await api.patch(`/posts/${editingPost._id}`, editPostForm);
-      toast.success("Story updated successfully");
+      await api.patch(`/posts/${editingPost._id}`, data);
+      toast.success('Story updated successfully');
       setEditingPost(null);
-      // Refetch
       const postRes = await api.get('/posts', { params: { author: id } });
       setPosts(postRes.data?.data || postRes.data || []);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to update story");
+      toast.error(err.response?.data?.message || 'Failed to update story');
     } finally {
       setIsSavingPost(false);
     }
@@ -107,13 +111,12 @@ export default function UserProfileView() {
   const handleDeletePost = async (postId: string) => {
     try {
       await api.delete(`/posts/${postId}`);
-      toast.success("Story deleted");
+      toast.success('Story deleted');
       setPosts(prev => prev.filter(p => p._id !== postId));
-    } catch (err: any) {
-      toast.error("Failed to delete story");
+    } catch {
+      toast.error('Failed to delete story');
     }
   };
-
 
   if (loading) return (
     <MainLayout currentUser={currentUser}>
@@ -125,22 +128,103 @@ export default function UserProfileView() {
 
   if (!targetUser) return null;
 
+  const tabs: { key: Tab; label: string; count: number }[] = [
+    { key: 'stories', label: 'Stories', count: posts.length },
+    { key: 'subscriptions', label: 'Subscriptions', count: following.length },
+    { key: 'followers', label: 'Followers', count: followers.length },
+  ];
+
+  const refreshLists = async () => {
+    const [followingRes, followersRes, targetRes] = await Promise.all([
+      api.get(`/users/${id}/following`),
+      api.get(`/users/${id}/followers`),
+      api.get(`/users/${id}`),
+    ]);
+    setFollowing(followingRes.data?.data || []);
+    setFollowers(followersRes.data?.data || []);
+    setTargetUser(targetRes.data?.data || targetRes.data);
+  };
+
   return (
     <MainLayout currentUser={currentUser}>
-      <div className="max-w-7xl mx-auto py-10 px-6 xl:px-0 flex flex-col-reverse lg:flex-row justify-center gap-12">
+      <div className="max-w-2xl mx-auto px-4 pb-16">
 
-        {/* Left: Posts */}
-        <div className="w-full max-w-xl lg:ml-auto lg:mr-auto">
-          <h2 className="text-4xl font-bold font-sans tracking-tight mb-8 hidden lg:block dark:text-[#e0e0e0]">
-            {targetUser.userName}
-          </h2>
-
-          <div className="border-b border-gray-100 dark:border-[#333333] mb-8 pb-1">
-            <span className="text-sm font-medium border-b-2 border-black dark:border-white pb-4 -mb-[2px] inline-block dark:text-[#e0e0e0]">
-              Stories
-            </span>
+        {/* ── Instagram-style Header ── */}
+        <div className="flex flex-col items-center pt-10 pb-6">
+          {/* Avatar */}
+          <div className="mb-4">
+            <Avatar
+              src={targetUser?.avatar}
+              fallback={targetUser?.userName || '?'}
+              alt={targetUser?.userName}
+              size="xl"
+              className="w-24 h-24 text-4xl ring-2 ring-gray-200 dark:ring-[#333] ring-offset-2 ring-offset-white dark:ring-offset-[#121212]"
+            />
           </div>
 
+          {/* Username */}
+          <h1 className="text-2xl font-bold font-sans dark:text-[#e0e0e0] mb-1">
+            {targetUser?.userName}
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-[#888] mb-4">
+            {targetUser?.role === 'admin' ? '🛡 Admin' : 'Writer'}
+          </p>
+
+          {/* Stats Row */}
+          <div className="flex items-center gap-8 mb-5">
+            <div className="text-center">
+              <p className="text-lg font-bold dark:text-[#e0e0e0]">{posts.length}</p>
+              <p className="text-xs text-gray-500 dark:text-[#888] uppercase tracking-wide">Stories</p>
+            </div>
+            <div className="w-px h-8 bg-gray-200 dark:bg-[#333]" />
+            <div className="text-center">
+              <p className="text-lg font-bold dark:text-[#e0e0e0]">{following.length}</p>
+              <p className="text-xs text-gray-500 dark:text-[#888] uppercase tracking-wide">Subscriptions</p>
+            </div>
+            <div className="w-px h-8 bg-gray-200 dark:bg-[#333]" />
+            <div className="text-center">
+              <p className="text-lg font-bold dark:text-[#e0e0e0]">{followers.length}</p>
+              <p className="text-xs text-gray-500 dark:text-[#888] uppercase tracking-wide">Followers</p>
+            </div>
+          </div>
+
+          {/* Follow / Unfollow Button */}
+          <FollowButton
+            targetUserId={String(targetUser._id)}
+            currentUser={currentUser}
+            size="md"
+            onToggle={refreshLists}
+          />
+        </div>
+
+        {/* ── Tabs ── */}
+        <div className="border-b border-gray-200 dark:border-[#333] mb-6">
+          <div className="flex">
+            {tabs.map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex-1 py-3 text-sm font-medium transition-colors relative ${activeTab === tab.key
+                  ? 'text-black dark:text-white'
+                  : 'text-gray-400 dark:text-[#666] hover:text-gray-700 dark:hover:text-[#aaa]'
+                  }`}
+              >
+                {tab.label}
+                {tab.count > 0 && (
+                  <span className="ml-1.5 text-xs text-gray-400 dark:text-[#666]">({tab.count})</span>
+                )}
+                {activeTab === tab.key && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-black dark:bg-white rounded-full" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Tab Content ── */}
+
+        {/* STORIES TAB */}
+        {activeTab === 'stories' && (
           <div className="space-y-2">
             {posts.length > 0 ? posts.map(post => (
               <PostCard
@@ -153,98 +237,104 @@ export default function UserProfileView() {
                 onDelete={handleDeletePost}
               />
             )) : (
-              <div className="py-20 text-center bg-gray-50 dark:bg-[#1f1f1f] rounded-lg">
-                <p className="text-gray-500 dark:text-[#999999]">No stories yet.</p>
+              <div className="py-20 text-center bg-gray-50 dark:bg-[#1f1f1f] rounded-xl">
+                <p className="text-gray-500 dark:text-[#999]">No stories yet.</p>
               </div>
             )}
           </div>
-        </div>
+        )}
 
-        {/* Right: User Info */}
-        <div className="w-full lg:w-80 h-fit lg:sticky lg:top-10">
-          <div className="flex flex-col gap-6">
-            <Avatar
-              src={targetUser?.avatar}
-              fallback={targetUser?.userName || '?'}
-              alt={targetUser?.userName}
-              size="xl"
-              className="w-24 h-24 text-4xl"
-            />
-            <div>
-              <h2 className="text-xl font-bold font-sans dark:text-[#e0e0e0]">{targetUser?.userName}</h2>
-              <p className="text-gray-500 dark:text-[#999999] text-sm mt-1">
-                {(targetUser?.followers?.length ?? 0)} Followers · {posts.length} Stories · {targetUser?.role === 'admin' ? 'Admin' : 'Writer'}
-              </p>
-            </div>
-            <FollowButton
-              targetUserId={String(targetUser._id)}
-              currentUser={currentUser}
-              size="md"
-            />
+        {/* SUBSCRIPTIONS TAB */}
+        {activeTab === 'subscriptions' && (
+          <div>
+            {following.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {following.map((user: any) => (
+                  <Link
+                    key={user._id}
+                    href={`/profile/${user._id}`}
+                    className="flex items-center gap-3 p-4 bg-white dark:bg-[#1f1f1f] border border-gray-100 dark:border-[#333] rounded-xl hover:border-gray-300 dark:hover:border-[#555] transition-all"
+                  >
+                    <Avatar
+                      src={user.avatar}
+                      fallback={user.userName || '?'}
+                      alt={user.userName}
+                      size="sm"
+                      className="w-11 h-11 text-lg flex-shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm dark:text-[#e0e0e0] truncate">{user.userName}</p>
+                      <p className="text-xs text-gray-400 dark:text-[#666]">
+                        {user.role === 'admin' ? 'Admin' : 'Writer'}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="py-20 text-center bg-gray-50 dark:bg-[#1f1f1f] rounded-xl">
+                <p className="text-gray-500 dark:text-[#999]">
+                  {targetUser.userName} hasn't subscribed to anyone yet.
+                </p>
+              </div>
+            )}
           </div>
-        </div>
+        )}
+
+        {/* FOLLOWERS TAB */}
+        {activeTab === 'followers' && (
+          <div>
+            {followers.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {followers.map((user: any) => (
+                  <div
+                    key={user._id}
+                    className="flex items-center justify-between p-4 bg-white dark:bg-[#1f1f1f] border border-gray-100 dark:border-[#333] rounded-xl hover:border-gray-300 dark:hover:border-[#555] transition-all"
+                  >
+                    <Link href={`/profile/${user._id}`} className="flex items-center gap-3 min-w-0">
+                      <Avatar
+                        src={user.avatar}
+                        fallback={user.userName || '?'}
+                        alt={user.userName}
+                        size="sm"
+                        className="w-11 h-11 text-lg flex-shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm dark:text-[#e0e0e0] truncate">{user.userName}</p>
+                        <p className="text-xs text-gray-400 dark:text-[#666]">
+                          {user.role === 'admin' ? 'Admin' : 'Writer'}
+                        </p>
+                      </div>
+                    </Link>
+                    <div className="ml-3 flex-shrink-0">
+                      <FollowButton
+                        targetUserId={String(user._id)}
+                        currentUser={currentUser}
+                        size="sm"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-20 text-center bg-gray-50 dark:bg-[#1f1f1f] rounded-xl">
+                <p className="text-gray-500 dark:text-[#999]">
+                  {targetUser.userName} has no followers yet.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
 
-      {/* Edit Modal (reused) */}
       {editingPost && (
-        <div className="fixed inset-0 bg-white/90 dark:bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
-          <div className="max-w-2xl w-full bg-white dark:bg-[#1f1f1f] shadow-2xl dark:shadow-black/50 rounded-2xl p-8 border border-gray-100 dark:border-[#333333] max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-bold dark:text-[#e0e0e0]">Edit Story</h2>
-              <button
-                onClick={() => setEditingPost(null)}
-                className="text-gray-400 dark:text-[#707070] hover:text-gray-600 dark:hover:text-[#999999] transition-colors p-1"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-[#999999] mb-2 uppercase tracking-wide">Title</label>
-                <input
-                  type="text"
-                  className="w-full text-2xl font-bold font-serif placeholder:text-gray-300 dark:placeholder:text-[#707070] border-b border-gray-200 dark:border-[#333333] focus:border-black dark:focus:border-white outline-none py-3 transition bg-transparent text-gray-900 dark:text-[#e0e0e0]"
-                  value={editPostForm.title}
-                  onChange={(e) => setEditPostForm({ ...editPostForm, title: e.target.value })}
-                  placeholder="Story title..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-[#999999] mb-2 uppercase tracking-wide">Content</label>
-                <textarea
-                  className="w-full text-lg font-serif leading-relaxed placeholder:text-gray-300 dark:placeholder:text-[#707070] border border-gray-200 dark:border-[#333333] rounded-lg focus:border-black dark:focus:border-white outline-none p-4 transition bg-transparent text-gray-900 dark:text-[#e0e0e0] resize-y min-h-[200px]"
-                  value={editPostForm.content}
-                  onChange={(e) => setEditPostForm({ ...editPostForm, content: e.target.value })}
-                  placeholder="Tell your story..."
-                  rows={10}
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 mt-8">
-              <Button
-                variant="ghost"
-                onClick={() => setEditingPost(null)}
-                className="rounded-full"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSavePost}
-                isLoading={isSavingPost}
-                disabled={!editPostForm.title.trim() || !editPostForm.content.trim()}
-                className="rounded-full px-6 bg-green-600 hover:bg-green-700 text-white border-none"
-              >
-                Save changes
-              </Button>
-            </div>
-          </div>
-        </div>
+        <EditPostModal
+          post={editingPost}
+          onClose={() => setEditingPost(null)}
+          onSave={handleSavePost}
+          isLoading={isSavingPost}
+        />
       )}
     </MainLayout>
   );

@@ -1,11 +1,13 @@
 "use client";
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import api from '../../../services/api';
 import { MainLayout } from '../../../components/layout/MainLayout';
 import { Avatar } from '../../../components/ui/Avatar';
 import { Spinner } from '../../../components/ui/Spinner';
+import { EditPostModal } from '../../../components/features/EditPostModal';
+import { Button } from '../../../components/ui/Button';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || '';
 
@@ -20,25 +22,37 @@ export default function PostDetail() {
   const [commentText, setCommentText] = useState('');
   const [commentLoading, setCommentLoading] = useState(false);
   const [commentsLoading, setCommentsLoading] = useState(true);
+  const [isBookmarked, setIsBookmarked] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [postRes, userRes] = await Promise.all([
-          api.get(`/posts/${id}`),
-          api.get('/users/profile').catch(() => ({ data: null }))
-        ]);
+  // Edit State
+  const [editingPost, setEditingPost] = useState<any>(null);
+  const [isSavingPost, setIsSavingPost] = useState(false);
 
-        setPost(postRes.data.data || postRes.data);
-        setCurrentUser(userRes.data?.data || userRes.data || null);
-      } catch (error) {
-        console.error("Error loading post:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Optimistic local states (mirror PostCard pattern)
+  const [localLikes, setLocalLikes] = useState<any[]>([]);
+  const [localReposts, setLocalReposts] = useState<any[]>([]);
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareRef = useRef<HTMLDivElement>(null);
 
-    if (id) fetchData();
+  const loadPost = useCallback(async () => {
+    try {
+      const [postRes, userRes] = await Promise.all([
+        api.get(`/posts/${id}`),
+        api.get('/users/profile').catch(() => ({ data: null }))
+      ]);
+
+      setPost(postRes.data.data || postRes.data);
+      setCurrentUser(userRes.data?.data || userRes.data || null);
+      const postData = postRes.data.data || postRes.data;
+      setPost(postData);
+      setLocalLikes(postData?.likes || []);
+      setLocalReposts(postData?.reposts || []);
+    } catch (error) {
+      console.error("Error loading post:", error);
+      toast.error("Failed to load post");
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
 
   const loadComments = useCallback(async () => {
@@ -55,8 +69,32 @@ export default function PostDetail() {
   }, [id]);
 
   useEffect(() => {
-    loadComments();
-  }, [loadComments]);
+    if (id) {
+      loadPost();
+      loadComments();
+    }
+  }, [id, loadPost, loadComments]);
+
+  useEffect(() => {
+    if (currentUser?.bookmarks && post) {
+      setIsBookmarked(currentUser.bookmarks.some((b: any) => (b._id || b) === post._id));
+    }
+  }, [currentUser, post]);
+
+  // Sync if post changes from outside
+  useEffect(() => { if (post?.likes) setLocalLikes(post.likes); }, [post?.likes]);
+  useEffect(() => { if (post?.reposts) setLocalReposts(post.reposts); }, [post?.reposts]);
+
+  // Close share dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (shareRef.current && !shareRef.current.contains(e.target as Node)) {
+        setShareOpen(false);
+      }
+    };
+    if (shareOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [shareOpen]);
 
   const handleSubmitComment = async () => {
     if (!commentText.trim()) return;
@@ -92,16 +130,74 @@ export default function PostDetail() {
   };
 
   const handleLike = async () => {
-    if (!currentUser) {
-      toast.error("Please log in to like");
-      return;
+    if (!currentUser) { toast.error("Please log in to like"); return; }
+    // Optimistic update first
+    const alreadyLiked = localLikes.some((id: any) => (id._id || id) === currentUser._id);
+    if (alreadyLiked) {
+      setLocalLikes(localLikes.filter((id: any) => (id._id || id) !== currentUser._id));
+    } else {
+      setLocalLikes([...localLikes, currentUser._id]);
     }
     try {
       const res = await api.post(`/posts/${id}/like`);
-      const updated = res.data.data || res.data;
-      setPost((prev: any) => ({ ...prev, likes: updated.likes }));
-    } catch (err) {
-      console.error("Like error:", err);
+      const updatedData = res.data.data || res.data;
+      if (updatedData?.likes) setLocalLikes(updatedData.likes);
+    } catch (err: any) {
+      // Rollback
+      setLocalLikes(post?.likes || []);
+      toast.error(err.response?.data?.message || "Like failed. Try again.");
+    }
+  };
+
+  const handleRepost = async () => {
+    if (!currentUser) { toast.error("Please log in to repost"); return; }
+    // Optimistic update first
+    const alreadyReposted = localReposts.some((id: any) => (id._id || id) === currentUser._id);
+    if (alreadyReposted) {
+      setLocalReposts(localReposts.filter((id: any) => (id._id || id) !== currentUser._id));
+    } else {
+      setLocalReposts([...localReposts, currentUser._id]);
+    }
+    try {
+      const res = await api.post(`/posts/${id}/repost`);
+      const updatedData = res.data.data || res.data;
+      if (updatedData?.reposts) setLocalReposts(updatedData.reposts);
+      else toast.success("Reposted!");
+    } catch (err: any) {
+      setLocalReposts(post?.reposts || []);
+      toast.error(err.response?.data?.message || "Repost failed");
+    }
+  };
+
+  const handleBookmark = async () => {
+    if (!currentUser) {
+      toast.error("Please log in to bookmark");
+      return;
+    }
+    try {
+      await api.post(`/users/bookmarks/${id}`);
+      setIsBookmarked(!isBookmarked);
+      toast.success(isBookmarked ? "Removed from bookmarks" : "Saved to bookmarks");
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Bookmark failed");
+    }
+  };
+
+  const handleEdit = () => {
+    setEditingPost(post);
+  };
+
+  const handleSaveEdit = async (data: { title: string; content: string }) => {
+    try {
+      setIsSavingPost(true);
+      const res = await api.patch(`/posts/${id}`, data);
+      setPost(res.data.data || res.data);
+      toast.success("Story updated successfully");
+      setEditingPost(null);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to update story");
+    } finally {
+      setIsSavingPost(false);
     }
   };
 
@@ -127,122 +223,192 @@ export default function PostDetail() {
     year: 'numeric'
   });
 
-  const isLiked = post.likes?.some((likeId: any) => (likeId._id || likeId) === currentUser?._id);
+  const isLiked = localLikes?.some((likeId: any) => (likeId._id || likeId) === currentUser?._id);
+  const isReposted = localReposts?.some((repostId: any) => (repostId._id || repostId) === currentUser?._id);
+  const isOwnPost = currentUser?._id === (post.author?._id || post.author);
 
   return (
     <MainLayout currentUser={currentUser}>
-      <article className="max-w-3xl mx-auto py-10 px-6 md:px-0">
-        {/* Header / Meta */}
-        <div className="mb-10">
-          <h1 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-[#e0e0e0] mb-6 leading-tight tracking-tight font-sans">
-            {post.title}
-          </h1>
+      <article className="max-w-3xl mx-auto py-10">
+        {/* 1. Title */}
+        <h1 className="text-[32px] md:text-[42px] font-black text-gray-900 dark:text-white mb-6 leading-[1.1] tracking-tight font-sans">
+          {post.title}
+        </h1>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar
-                src={post.author?.avatar}
-                fallback={post.author?.userName || '?'}
-                alt={post.author?.userName}
-                size="md"
-              />
-              <div>
-                <div className="font-medium text-gray-900 dark:text-[#e0e0e0] text-sm">
-                  {post.author?.userName}
-                </div>
-                <div className="text-gray-500 dark:text-[#999999] text-xs flex gap-2">
-                  <span>{date}</span>
-                  <span>·</span>
-                  <span>4 min read</span>
-                </div>
-              </div>
+        {/* 2. Author block (Header) */}
+        <div className="flex items-center gap-3 mb-8">
+          <Avatar
+            src={post.author?.avatar}
+            fallback={post.author?.userName || '?'}
+            alt={post.author?.userName}
+            size="md"
+            className="w-12 h-12"
+          />
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-[#292929] dark:text-white text-[15px]">
+                {post.author?.userName}
+              </span>
+              {!isOwnPost && (
+                <button className="text-brand-orange text-xs font-bold hover:underline ml-1">
+                  Subscribe
+                </button>
+              )}
             </div>
-
-            <div className="flex gap-3 text-gray-400 dark:text-[#707070]">
-              <button className="hover:text-black dark:hover:text-white transition p-1" title="Share link" onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success("Link copied!"); }}>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935-2.186 2.25 2.25 0 0 0-3.935 2.186Zm0-12.814a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Z" />
-                </svg>
-              </button>
+            <div className="text-gray-500 dark:text-[#999999] text-[13px] flex gap-2">
+              <span>4 min read</span>
+              <span>·</span>
+              <span>{date}</span>
             </div>
           </div>
         </div>
 
-        {/* Cover Image */}
+        {/* 3. Actions Bar */}
+        <div className="flex items-center justify-between py-4 border-y border-gray-100 dark:border-[#2a2a2a] mb-10">
+          <div className="flex items-center gap-5">
+            {/* Like */}
+            <button
+              onClick={handleLike}
+              className={`flex items-center gap-1.5 transition-colors duration-300 ${isLiked ? 'text-brand-orange' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+              title="Like"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill={isLiked ? "currentColor" : "none"}>
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="text-[13px] font-sans">{localLikes.length > 0 ? localLikes.length : ''}</span>
+            </button>
+
+            {/* Comment */}
+            <button
+              onClick={() => document.getElementById('comments')?.scrollIntoView({ behavior: 'smooth' })}
+              className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              title="Comment"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="text-[13px] font-sans">{comments.length > 0 ? comments.length : ''}</span>
+            </button>
+
+            {/* Repost */}
+            <button
+              onClick={handleRepost}
+              className={`flex items-center gap-1.5 transition-colors duration-300 ${isReposted ? 'text-brand-orange' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+              title="Repost"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 2l4 4-4 4" />
+                <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+                <path d="M7 22l-4-4 4-4" />
+                <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+              </svg>
+              <span className="text-[13px] font-sans">{localReposts.length > 0 ? localReposts.length : ''}</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {/* Bookmark */}
+            <button
+              onClick={handleBookmark}
+              className={`transition-colors ${isBookmarked ? 'text-brand-orange' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+              title="Save to Reading List"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill={isBookmarked ? "currentColor" : "none"}>
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+
+            {/* Share */}
+            <div className="relative" ref={shareRef}>
+              <button
+                onClick={() => setShareOpen(!shareOpen)}
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                title="Share"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                  <polyline points="16 6 12 2 8 6" />
+                  <line x1="12" y1="2" x2="12" y2="15" />
+                </svg>
+              </button>
+              {shareOpen && (
+                <div className="absolute right-0 bottom-full mb-2 bg-white dark:bg-[#1f1f1f] border border-gray-100 dark:border-[#333] rounded-xl shadow-2xl p-2 min-w-[180px] z-[100] animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  {[{ p: 'x', label: 'Share on X', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg> }, { p: 'telegram', label: 'Telegram', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg> }, { p: 'whatsapp', label: 'WhatsApp', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l2.28-2.28a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg> }].map(s => (
+                    <button key={s.p} onClick={() => { const url = window.location.href; const text = `Check out this story: ${post.title}`; let su = ''; if (s.p === 'x') su = `https://x.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`; if (s.p === 'telegram') su = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`; if (s.p === 'whatsapp') su = `https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + url)}`; if (su) window.open(su, '_blank'); setShareOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg transition-colors font-sans">
+                      {s.icon}{s.label}
+                    </button>
+                  ))}
+                  <button onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success("Link copied!"); setShareOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg transition-colors border-t border-gray-100 dark:border-[#333] mt-1 pt-2 font-sans">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+                    Copy link
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {isOwnPost && (
+              <button
+                onClick={handleEdit}
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                title="Edit Story"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 4. Cover Image */}
         {post.coverImage && (
-          <div className="mb-12 rounded-lg overflow-hidden bg-gray-50 dark:bg-[#1f1f1f] aspect-video">
-            <img src={post.coverImage.startsWith('http') ? post.coverImage : `${BACKEND_URL}${post.coverImage}`} alt={post.title} className="w-full h-full object-cover" />
+          <div className="mb-10 rounded-sm overflow-hidden bg-gray-50 dark:bg-[#1f1f1f]">
+            <img
+              src={post.coverImage.startsWith('http') ? post.coverImage : `${BACKEND_URL}${post.coverImage}`}
+              alt={post.title}
+              className="w-full h-full object-cover max-h-[500px]"
+            />
           </div>
         )}
 
-        {/* Content */}
-        <div className="prose prose-lg md:prose-xl prose-slate dark:prose-invert max-w-none font-serif leading-relaxed text-gray-800 dark:text-[#cccccc]">
-          <div className="whitespace-pre-wrap">
-            {post.content}
-          </div>
+        {/* 5. Content */}
+        <div className="prose prose-lg dark:prose-invert max-w-none font-serif leading-[1.6] text-[#292929] dark:text-[#d1d1d1] mb-20 text-[20px]">
+          <div
+            className="rich-content"
+            dangerouslySetInnerHTML={{ __html: post.content }}
+          />
         </div>
 
-        {/* Footer / Tags */}
-        <div className="mt-16 pt-8 border-t border-gray-100 dark:border-[#333333]">
-          <div className="flex flex-wrap gap-2 mb-8">
-            {post.categories?.map((cat: any) => (
-              <span key={cat._id} className="bg-gray-100 dark:bg-[#252525] text-gray-700 dark:text-[#999999] px-3 py-1 rounded-full text-sm">
-                {cat.name}
-              </span>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-6 py-4">
-            <button
-              onClick={handleLike}
-              className={`flex items-center gap-2 transition ${isLiked ? 'text-red-500' : 'text-gray-500 dark:text-[#999999] hover:text-red-500'}`}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill={isLiked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
-              </svg>
-              <span className="font-medium text-sm">{post.likes?.length || 0}</span>
-            </button>
-
-            <span className="flex items-center gap-2 text-gray-500 dark:text-[#999999]">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785A5.969 5.969 0 0 0 6 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337Z" />
-              </svg>
-              <span className="font-medium text-sm">{comments.length}</span>
-            </span>
-          </div>
-        </div>
-
-        {/* Comments Section */}
-        <div className="mt-12 pt-8 border-t border-gray-100 dark:border-[#333333]">
-          <h3 className="text-xl font-bold font-sans mb-8 dark:text-[#e0e0e0]">
+        {/* 6. Comments Section */}
+        <div id="comments" className="mt-12 pt-12 border-t border-gray-100 dark:border-[#2a2a2a]">
+          <h3 className="text-[22px] font-bold font-sans mb-8 dark:text-white">
             Responses ({comments.length})
           </h3>
 
-          {/* Comment Input */}
           {currentUser ? (
-            <div className="mb-10 bg-white dark:bg-[#1f1f1f] border border-gray-200 dark:border-[#333333] rounded-xl p-5 shadow-sm dark:shadow-black/20">
-              <div className="flex items-start gap-3">
+            <div className="mb-10 bg-white dark:bg-[#121212] border border-gray-100 dark:border-[#2a2a2a] rounded-xl p-5 shadow-sm">
+              <div className="flex items-start gap-4">
                 <Avatar
                   src={currentUser?.avatar}
                   fallback={currentUser?.userName || '?'}
                   alt={currentUser?.userName}
                   size="sm"
-                  className="w-8 h-8 text-xs mt-1"
+                  className="w-10 h-10 mt-1"
                 />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-[#e0e0e0] mb-2">{currentUser?.userName}</p>
                   <textarea
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                     placeholder="What are your thoughts?"
-                    rows={3}
-                    className="w-full text-sm text-gray-800 dark:text-[#cccccc] placeholder:text-gray-400 dark:placeholder:text-[#707070] border-none outline-none bg-transparent resize-none font-serif leading-relaxed"
+                    rows={4}
+                    className="w-full text-[16px] text-[#292929] dark:text-gray-200 placeholder:text-gray-400 border-none outline-none bg-transparent resize-none font-sans"
                   />
-                  <div className="flex justify-end pt-2 border-t border-gray-100 dark:border-[#333333] mt-2">
+                  <div className="flex justify-end pt-3 border-t border-gray-50 dark:border-[#2a2a2a] mt-3">
                     <button
                       onClick={handleSubmitComment}
                       disabled={!commentText.trim() || commentLoading}
-                      className="px-5 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="px-6 py-2 bg-[#1a1a1a] dark:bg-white dark:text-black text-white text-[14px] font-bold rounded-full hover:opacity-90 transition-all disabled:opacity-50"
                     >
                       {commentLoading ? 'Sending...' : 'Respond'}
                     </button>
@@ -251,50 +417,39 @@ export default function PostDetail() {
               </div>
             </div>
           ) : (
-            <div className="mb-10 bg-gray-50 dark:bg-[#1f1f1f] rounded-xl p-6 text-center">
-              <p className="text-gray-500 dark:text-[#999999] text-sm">Please <a href="/login" className="text-green-600 dark:text-green-400 font-medium underline">log in</a> to leave a comment.</p>
+            <div className="mb-10 bg-gray-50 dark:bg-[#121212] rounded-xl p-8 text-center border border-dashed border-gray-200 dark:border-[#2a2a2a]">
+              <p className="text-gray-500 dark:text-[#999999] text-[15px]">Please <a href="/login" className="text-brand-orange font-bold hover:underline">log in</a> to leave a comment.</p>
             </div>
           )}
 
-          {/* Comment List */}
           {commentsLoading ? (
-            <div className="flex justify-center py-8">
+            <div className="flex justify-center py-10">
               <Spinner size="md" />
             </div>
-          ) : comments.length === 0 ? (
-            <div className="text-center py-12 text-gray-400 dark:text-[#707070]">
-              <p className="text-sm">No responses yet. Be the first to share your thoughts!</p>
-            </div>
           ) : (
-            <div className="space-y-0">
+            <div className="space-y-8">
               {comments.map((comment: any) => (
-                <div key={comment._id} className="py-6 border-b border-gray-100 dark:border-[#333333] last:border-none">
+                <div key={comment._id} className="pb-8 border-b border-gray-50 dark:border-[#2a2a2a] last:border-none">
                   <div className="flex items-start gap-3">
                     <Avatar
                       src={comment.author?.avatar}
                       fallback={comment.author?.userName || '?'}
                       alt={comment.author?.userName}
                       size="sm"
-                      className="w-8 h-8 text-xs mt-0.5"
+                      className="w-9 h-9"
                     />
                     <div className="flex-1">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm text-gray-900 dark:text-[#e0e0e0]">{comment.author?.userName}</span>
-                          <span className="text-xs text-gray-400 dark:text-[#707070]">
+                          <span className="font-bold text-[14px] text-[#292929] dark:text-white">
+                            {comment.author?.userName}
+                          </span>
+                          <span className="text-[12px] text-gray-400">
                             {new Date(comment.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </span>
                         </div>
-                        {(currentUser?._id === (comment.author?._id || comment.author) || currentUser?.role === 'admin') && (
-                          <button
-                            onClick={() => handleDeleteComment(comment._id)}
-                            className="text-gray-400 dark:text-[#707070] hover:text-red-500 transition text-xs"
-                          >
-                            Delete
-                          </button>
-                        )}
                       </div>
-                      <p className="text-sm text-gray-700 dark:text-[#cccccc] mt-2 font-serif leading-relaxed">
+                      <p className="text-[15px] text-[#292929] dark:text-[#bcbcbc] leading-relaxed">
                         {comment.content}
                       </p>
                     </div>
@@ -305,6 +460,15 @@ export default function PostDetail() {
           )}
         </div>
       </article>
+
+      {editingPost && (
+        <EditPostModal
+          post={editingPost}
+          onClose={() => setEditingPost(null)}
+          onSave={handleSaveEdit}
+          isLoading={isSavingPost}
+        />
+      )}
     </MainLayout>
   );
 }

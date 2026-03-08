@@ -71,58 +71,97 @@ export default function Register() {
     }
   };
 
-  return (
-    <AuthLayout title="Join DevStories." subtitle="Create an account to verify your email.">
-      <form onSubmit={handleRegister} className="space-y-6">
-        <Input
-          label="Username"
-          name="userName"
-          value={formData.userName}
-          onChange={handleChange}
-          placeholder="Your username"
-          error={errors.userName}
-          required
-        />
-        <Input
-          label="Age"
-          name="age"
-          type="number"
-          value={formData.age}
-          onChange={handleChange}
-          placeholder="Your age"
-          error={errors.age}
-          required
-        />
-        <Input
-          label="Email"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          placeholder="your@email.com"
-          error={errors.email}
-          required
-        />
-        <Input
-          label="Password"
-          name="password"
-          type="password"
-          value={formData.password}
-          onChange={handleChange}
-          placeholder="••••••••"
-          error={errors.password}
-          required
-          minLength={6}
-        />
+  const stats = [
+    { label: 'O\'quvchilar', value: '10K+' },
+    { label: 'Mavzular', value: '100+' },
+  ];
 
-        <Button type="submit" className="w-full rounded-full" size="lg" isLoading={loading}>
-          Sign up
+  return (
+    <AuthLayout
+      title="Ro'yxatdan o'tish."
+      subtitle="O'z hikoyangizni boshlang"
+      quote="Fikr almashish orqali mukammallikka erishing."
+      author="DevStories jamoasi"
+      stats={stats}
+    >
+      <form onSubmit={handleRegister} className="space-y-6">
+        <div className="space-y-1">
+          <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 ml-1">
+            USERNAME
+          </label>
+          <Input
+            name="userName"
+            value={formData.userName}
+            onChange={handleChange}
+            placeholder="username"
+            error={errors.userName}
+            className="!rounded-xl border-slate-200 dark:border-slate-800 focus:border-orange-500 dark:focus:border-orange-500 transition-colors"
+            required
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 ml-1">
+            AGE
+          </label>
+          <Input
+            name="age"
+            type="number"
+            value={formData.age}
+            onChange={handleChange}
+            placeholder="yoshingiz"
+            error={errors.age}
+            className="!rounded-xl border-slate-200 dark:border-slate-800 focus:border-orange-500 dark:focus:border-orange-500 transition-colors"
+            required
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 ml-1">
+            EMAIL
+          </label>
+          <Input
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="email@misol.uz"
+            error={errors.email}
+            className="!rounded-xl border-slate-200 dark:border-slate-800 focus:border-orange-500 dark:focus:border-orange-500 transition-colors"
+            required
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 ml-1">
+            PASSWORD
+          </label>
+          <Input
+            name="password"
+            type="password"
+            value={formData.password}
+            onChange={handleChange}
+            placeholder="••••••••"
+            error={errors.password}
+            className="!rounded-xl border-slate-200 dark:border-slate-800 focus:border-orange-500 dark:focus:border-orange-500 transition-colors"
+            required
+            minLength={6}
+          />
+        </div>
+
+        <Button
+          type="submit"
+          variant="orange"
+          className="w-full rounded-xl shadow-lg shadow-orange-500/20 py-4 font-bold text-lg"
+          isLoading={loading}
+        >
+          Ro'yxatdan o'tish <span className="ml-2">→</span>
         </Button>
 
-        <p className="text-center text-sm text-gray-500 dark:text-[#999999] mt-6">
-          Already have an account?
-          <Link href="/login" className="text-green-700 dark:text-green-400 font-bold ml-1 hover:text-green-800 dark:hover:text-green-300">
-            Sign in
+        <p className="text-center text-sm text-gray-500 dark:text-slate-400 mt-8">
+          Hisobingiz bormi?
+          <Link href="/login" className="text-orange-600 dark:text-orange-400 font-bold ml-1 hover:underline decoration-2 underline-offset-4">
+            Kirish
           </Link>
         </p>
       </form>

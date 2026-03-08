@@ -11,21 +11,24 @@ interface PostCardProps {
     currentUser: any;
     onLike: (postId: string) => void;
     onRepost?: (postId: string) => void;
+    onBookmark?: (postId: string) => void;
     onEdit?: (post: any) => void;
     onDelete?: (postId: string) => void;
 }
 
-export const PostCard: React.FC<PostCardProps> = ({ post, currentUser, onLike, onRepost, onEdit, onDelete }) => {
+export const PostCard: React.FC<PostCardProps> = ({ post, currentUser, onLike, onRepost, onBookmark, onEdit, onDelete }) => {
     // Optimistic states
     const [localLikes, setLocalLikes] = useState(post.likes || []);
     const [localReposts, setLocalReposts] = useState(post.reposts || []);
     const isLiked = localLikes?.some((id: any) => (id._id || id) === currentUser?._id);
     const isReposted = localReposts?.some((id: any) => (id._id || id) === currentUser?._id);
+    const [localIsBookmarked, setLocalIsBookmarked] = useState(post.isBookmarked || false);
 
     const [animating, setAnimating] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const [shareOpen, setShareOpen] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
+    const [dismissed, setDismissed] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const shareRef = useRef<HTMLDivElement>(null);
 
@@ -38,7 +41,12 @@ export const PostCard: React.FC<PostCardProps> = ({ post, currentUser, onLike, o
         setLocalReposts(post.reposts || []);
     }, [post.reposts]);
 
-    const authorId = post.author?._id || post.author;
+    useEffect(() => {
+        setLocalIsBookmarked(post.isBookmarked || false);
+    }, [post.isBookmarked]);
+
+    const displayAuthor = post.repostedBy || post.author;
+    const authorId = displayAuthor?._id || displayAuthor;
     const isOwner = currentUser?._id && (String(authorId) === String(currentUser._id));
     const isAdmin = currentUser?.role === 'admin';
     const canManage = isOwner || isAdmin;
@@ -65,6 +73,13 @@ export const PostCard: React.FC<PostCardProps> = ({ post, currentUser, onLike, o
     const coverImageUrl = post.coverImage
         ? (post.coverImage.startsWith('http') ? post.coverImage : `${BACKEND_URL}${post.coverImage}`)
         : null;
+
+    // Reading time: avg 200 words/min
+    const wordCount = (post.content || '').split(/\s+/).filter(Boolean).length;
+    const readingTime = Math.max(1, Math.ceil(wordCount / 200));
+
+    // Trending if 5+ likes
+    const isTrending = (localLikes?.length || 0) >= 5;
 
     const handleLikeClick = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -102,6 +117,17 @@ export const PostCard: React.FC<PostCardProps> = ({ post, currentUser, onLike, o
         onRepost?.(post._id);
     };
 
+    const handleBookmarkClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!currentUser) {
+            toast.error("Please log in to bookmark");
+            return;
+        }
+        setLocalIsBookmarked(!localIsBookmarked);
+        onBookmark?.(post._id);
+    };
+
     const copyToClipboard = () => {
         const url = `${window.location.origin}/posts/${post._id}`;
         navigator.clipboard.writeText(url);
@@ -130,266 +156,265 @@ export const PostCard: React.FC<PostCardProps> = ({ post, currentUser, onLike, o
         setShareOpen(false);
     };
 
+    if (dismissed) return null;
+
     return (
-        <article className="border-b border-gray-100 dark:border-[#2a2a2a] py-5 group last:border-none">
-            {/* Row 1: Author info */}
-            <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                    <Avatar
-                        src={post.author?.avatar}
-                        fallback={post.author?.userName || '?'}
-                        alt={post.author?.userName}
-                        size="sm"
-                        className="w-6 h-6 sm:w-9 sm:h-9 text-[10px] sm:text-xs"
-                    />
-                    <div className="flex items-center gap-2">
-                        <span className="font-bold sm:font-semibold text-[13px] sm:text-sm text-gray-800 dark:text-[#e0e0e0]">
-                            {post.author?.userName}
-                        </span>
-                        <span className="text-gray-400 dark:text-[#707070] text-[11px] sm:text-xs uppercase sm:normal-case tracking-wide sm:tracking-normal font-medium sm:font-normal sm:ml-2">
-                            {date}
-                        </span>
-                    </div>
+        <article className="border-b border-gray-100 dark:border-[#2a2a2a] py-8 last:border-0 transition-opacity hover:opacity-95">
+            {post.repostedBy && (
+                <div className="flex items-center gap-2 mb-3 px-1 text-gray-500 dark:text-gray-400">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17 2l4 4-4 4"></path>
+                        <path d="M3 11v-1a4 4 0 0 1 4-4h14"></path>
+                        <path d="M7 22l-4-4 4-4"></path>
+                        <path d="M21 13v1a4 4 0 0 1-4 4H3"></path>
+                    </svg>
+                    <span className="text-[12px] font-sans font-medium">
+                        reposted from <Link href={`/posts/${post._id}`} className="font-bold hover:underline text-gray-900 dark:text-white">{post.author?.userName}</Link>
+                    </span>
                 </div>
+            )}
+            <div className="flex gap-8 items-start">
+                <div className="flex-1 min-w-0">
+                    {/* Author & Meta */}
+                    {/* Author & Meta */}
+                    <div className="flex items-center justify-between mb-3 relative">
+                        <div className="flex items-center gap-2">
+                            <Link href={`/profile/${displayAuthor?._id || displayAuthor}`} className="shrink-0">
+                                <Avatar
+                                    src={displayAuthor?.avatar}
+                                    fallback={displayAuthor?.userName || '?'}
+                                    alt={displayAuthor?.userName}
+                                    size="sm"
+                                    className="w-5 h-5 text-[10px]"
+                                />
+                            </Link>
+                            <div className="flex items-center gap-1 font-sans text-[12px] sm:text-[13px] text-[#292929] dark:text-[#d1d1d1]">
+                                <Link href={`/profile/${displayAuthor?._id || displayAuthor}`} className="font-bold hover:underline">
+                                    {displayAuthor?.userName}
+                                </Link>
+                                {displayAuthor?.role === 'admin' && (
+                                    <span className="text-[10px] bg-gray-100 dark:bg-white/10 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider text-gray-500 dark:text-gray-400 ml-1">Staff</span>
+                                )}
+                                <span className="text-gray-400 dark:text-[#555] mx-0.5">·</span>
+                                <span className="text-gray-500 dark:text-[#808080]">{date}</span>
+                            </div>
+                        </div>
 
-                <div className="flex items-center gap-2">
-                    {!isOwner && (
-                        <FollowButton
-                            targetUserId={String(authorId)}
-                            currentUser={currentUser}
-                            size="sm"
-                        />
-                    )}
+                        <div className="flex items-center gap-2">
+                            {currentUser && (currentUser._id !== (displayAuthor?._id || displayAuthor)) && (
+                                <FollowButton
+                                    targetUserId={displayAuthor?._id || displayAuthor}
+                                    currentUser={currentUser}
+                                    initialIsFollowing={displayAuthor?.isFollowing}
+                                    onToggle={() => { }}
+                                />
+                            )}
+                            <div className="flex items-center gap-0.5">
+                                <div className="relative">
+                                    <button
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuOpen(!menuOpen); }}
+                                        className="text-gray-400 hover:text-gray-900 dark:hover:text-white p-1 transition-colors"
+                                        title="More"
+                                    >
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm7 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM5 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"></path>
+                                        </svg>
+                                    </button>
+                                    {menuOpen && (
+                                        <div className="absolute right-0 top-full mt-2 bg-white dark:bg-[#1f1f1f] border border-gray-100 dark:border-[#333] rounded-xl shadow-2xl overflow-hidden py-2 min-w-[200px] z-[100] animate-in fade-in zoom-in-95 duration-200" ref={menuRef}>
+                                            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); copyToClipboard(); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-[14px] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                                                Copy link
+                                            </button>
 
-                    {/* More Menu */}
-                    {canManage && (onEdit || onDelete) && (
-                        <div className="relative" ref={menuRef}>
-                            <button
-                                onClick={() => { setMenuOpen(!menuOpen); setConfirmDelete(false); }}
-                                className="text-gray-400 dark:text-[#707070] hover:text-gray-600 dark:hover:text-[#999999] transition-colors p-1 rounded-full hover:bg-gray-100 dark:hover:bg-[#252525]"
-                                title="More options"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
-                                    <circle cx="5" cy="12" r="1.5" />
-                                    <circle cx="12" cy="12" r="1.5" />
-                                    <circle cx="19" cy="12" r="1.5" />
-                                </svg>
-                            </button>
-
-                            {menuOpen && (
-                                <div className="absolute right-0 top-8 bg-white dark:bg-[#1f1f1f] border border-gray-200 dark:border-[#333333] rounded-xl shadow-lg dark:shadow-black/30 py-1.5 min-w-[160px] z-50">
-                                    {!confirmDelete ? (
-                                        <>
-                                            {onEdit && (
-                                                <button
-                                                    onClick={() => { onEdit(post); setMenuOpen(false); }}
-                                                    className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-[#999999] hover:bg-gray-50 dark:hover:bg-[#252525] transition-colors"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                                                    </svg>
-                                                    Edit story
-                                                </button>
+                                            {!canManage && (
+                                                <>
+                                                    {currentUser?._id !== (post.author?._id || post.author) && (
+                                                        <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[14px] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                                                            Subscribe
+                                                        </button>
+                                                    )}
+                                                    <div className="border-t border-gray-100 dark:border-[#333] my-1"></div>
+                                                    <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[14px] text-red-500 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors font-medium">
+                                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+                                                        Mute
+                                                    </button>
+                                                    <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[14px] text-red-500 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors font-medium">
+                                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                                                        Block
+                                                    </button>
+                                                    <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[14px] text-red-500 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors font-medium">
+                                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                                        Report
+                                                    </button>
+                                                </>
                                             )}
-                                            {onDelete && (
-                                                <button
-                                                    onClick={() => setConfirmDelete(true)}
-                                                    className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                                    </svg>
-                                                    Delete story
-                                                </button>
+
+                                            {canManage && (
+                                                <>
+                                                    <div className="border-t border-gray-100 dark:border-[#333] my-1"></div>
+                                                    <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit?.(post); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-[14px] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                                        Edit story
+                                                    </button>
+                                                    <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete?.(post._id); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-[14px] text-red-500 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors font-medium">
+                                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+                                                        Delete story
+                                                    </button>
+                                                </>
                                             )}
-                                        </>
-                                    ) : (
-                                        <div className="px-4 py-3">
-                                            <p className="text-sm text-gray-700 dark:text-[#999999] mb-3 font-medium">Delete this story?</p>
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => { onDelete!(post._id); setMenuOpen(false); setConfirmDelete(false); }}
-                                                    className="flex-1 px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-full hover:bg-red-700 transition-colors"
-                                                >
-                                                    Delete
-                                                </button>
-                                                <button
-                                                    onClick={() => setConfirmDelete(false)}
-                                                    className="flex-1 px-3 py-1.5 bg-gray-100 dark:bg-[#252525] text-gray-600 dark:text-[#999999] text-xs font-medium rounded-full hover:bg-gray-200 dark:hover:bg-[#333333] transition-colors"
-                                                >
-                                                    Cancel
-                                                </button>
-                                            </div>
                                         </div>
                                     )}
                                 </div>
-                            )}
+                                <button
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDismissed(true); }}
+                                    className="text-gray-400 hover:text-gray-900 dark:hover:text-white p-1 transition-colors"
+                                    title="Dismiss"
+                                >
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Row 2: Content Layout (Responsive) */}
-            <div className="sm:block">
-                {/* Mobile version (side-by-side) */}
-                <div className="flex sm:hidden gap-4 mb-4 items-start">
-                    <div className="flex-1 min-w-0">
-                        {/* Title (Mobile) */}
-                        <Link href={`/posts/${post._id}`} className="block hover:opacity-90 transition-opacity mb-2">
-                            <h2 className="text-[17px] font-extrabold text-gray-900 dark:text-[#e0e0e0] leading-snug hover:underline line-clamp-2">
-                                {post.title}
-                            </h2>
-                        </Link>
-
-                        {/* Excerpt (Mobile) */}
-                        {post.content && (
-                            <Link href={`/posts/${post._id}`} className="block hover:opacity-90 transition-opacity">
-                                <p className="text-gray-500 dark:text-[#888888] text-sm leading-snug line-clamp-2">
-                                    {post.content?.substring(0, 160) + (post.content?.length > 160 ? '...' : '')}
-                                </p>
-                            </Link>
-                        )}
                     </div>
 
-                    {/* Thumbnail Image (Right side - Mobile only) */}
-                    {coverImageUrl && (
-                        <Link href={`/posts/${post._id}`} className="block shrink-0 rounded-lg overflow-hidden border border-gray-100 dark:border-[#2a2a2a] w-24 h-24">
-                            <img
-                                src={coverImageUrl}
-                                alt={post.title}
-                                className="w-full h-full object-cover"
-                            />
-                        </Link>
-                    )}
-                </div>
-
-                {/* Desktop version (Original stacked layout) */}
-                <div className="hidden sm:block">
-                    {/* Title (Desktop) */}
-                    <Link href={`/posts/${post._id}`} className="block hover:opacity-90 transition-opacity mb-3">
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-[#e0e0e0] leading-tight hover:underline">
+                    {/* Title */}
+                    <Link href={`/posts/${post._id}`} className="block group">
+                        <h2 className="post-title text-[20px] sm:text-[22px] mb-2 line-clamp-2">
                             {post.title}
                         </h2>
                     </Link>
 
-                    {/* Cover image (Full width - Desktop only) */}
-                    {coverImageUrl && (
-                        <Link href={`/posts/${post._id}`} className="block mb-4 rounded-xl overflow-hidden border border-gray-100 dark:border-[#2a2a2a]">
-                            <img
-                                src={coverImageUrl}
-                                alt={post.title}
-                                className="w-full object-cover max-h-[480px]"
-                            />
-                        </Link>
-                    )}
-
-                    {/* Excerpt (Desktop) */}
+                    {/* Excerpt */}
                     {post.content && (
-                        <Link href={`/posts/${post._id}`} className="block mb-4 hover:opacity-90 transition-opacity">
-                            <p className="text-gray-500 dark:text-[#888888] text-base leading-relaxed line-clamp-3">
-                                {post.content?.substring(0, 250) + (post.content?.length > 250 ? '...' : '')}
+                        <Link href={`/posts/${post._id}`} className="block mb-4">
+                            <p className="font-serif text-[15px] sm:text-[16px] text-[#757575] dark:text-[#999999] line-clamp-2 leading-relaxed">
+                                {(() => {
+                                    const plain = (post.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                                    return plain.length > 160 ? plain.substring(0, 160) + '...' : plain;
+                                })()}
+
                             </p>
                         </Link>
                     )}
-                </div>
-            </div>
 
-            {/* Row 3: Action bar */}
-            <div className="flex items-center gap-6 mt-1">
-                {/* Like */}
-                <button
-                    onClick={handleLikeClick}
-                    className={`flex items-center gap-1.5 transition-colors ${isLiked ? 'text-[#ff6719]' : 'text-gray-400 dark:text-[#707070] hover:text-black dark:hover:text-white'}`}
-                    title={isLiked ? "Unlike" : "Like"}
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill={isLiked ? 'currentColor' : 'none'}
-                        viewBox="0 0 24 24"
-                        strokeWidth={isLiked ? 0 : 1.5}
-                        stroke="currentColor"
-                        className="w-5 h-5 transition-transform duration-300 ease-out"
-                        style={{ transform: animating ? 'scale(1.2)' : 'scale(1)' }}
-                    >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
-                    </svg>
-                    <span className="text-sm font-medium">{localLikes?.length || 0}</span>
-                </button>
+                    {/* Metadata Row */}
+                    <div className="flex items-center gap-3 mb-4">
+                        <span className="text-[12px] text-gray-500 dark:text-[#707070] font-sans">
+                            {readingTime} min read
+                        </span>
+                        {post.categories?.[0] && (
+                            <span className="px-2.5 py-0.5 bg-red-50 dark:bg-brand-orange/10 text-brand-orange dark:text-brand-orange border border-red-100 dark:border-brand-orange/20 rounded-full text-[11px] font-sans font-medium">
+                                {post.categories[0].name}
+                            </span>
+                        )}
+                        {isTrending && (
+                            <span className="text-brand-orange text-[12px]">★</span>
+                        )}
+                    </div>
 
-                {/* Comment */}
-                <Link
-                    href={`/posts/${post._id}#comments`}
-                    className="flex items-center gap-1.5 text-gray-400 dark:text-[#707070] hover:text-black dark:hover:text-white transition-colors"
-                    title="Comment"
-                >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    </svg>
-                    <span className="text-sm font-medium">{post.commentCount || 0}</span>
-                </Link>
-
-                {/* Repost */}
-                <button
-                    onClick={handleRepostClick}
-                    className={`flex items-center gap-1.5 transition-colors ${isReposted ? 'text-green-600' : 'text-gray-400 dark:text-[#707070] hover:text-black dark:hover:text-white'}`}
-                    title="Repost"
-                >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M17 1l4 4-4 4" />
-                        <path d="M3 11V9a4 4 0 0 1 4-4h14" />
-                        <path d="M7 23l-4-4 4-4" />
-                        <path d="M21 13v2a4 4 0 0 1-4 4H3" />
-                    </svg>
-                    <span className="text-sm font-medium">{localReposts?.length || 0}</span>
-                </button>
-
-                {/* Share */}
-                <div className="relative" ref={shareRef}>
-                    <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShareOpen(!shareOpen); }}
-                        className="flex items-center text-gray-400 dark:text-[#707070] hover:text-black dark:hover:text-white transition-colors"
-                        title="Share"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
-                        </svg>
-                    </button>
-
-                    {shareOpen && (
-                        <div className="absolute left-0 bottom-full mb-3 bg-white dark:bg-[#1f1f1f] border border-gray-200 dark:border-[#333333] rounded-xl shadow-xl dark:shadow-black/50 py-2 min-w-[180px] z-[60]">
-                            <button onClick={copyToClipboard} className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-[#e0e0e0] hover:bg-gray-50 dark:hover:bg-[#2a2a2a] transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-gray-400">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                    {/* Footer Actions */}
+                    <div className="flex items-center justify-between border-t border-gray-50 dark:border-white/5 pt-3 mt-4">
+                        <div className="flex items-center gap-5">
+                            <button
+                                onClick={handleLikeClick}
+                                className={`flex items-center gap-1.5 transition-colors duration-300 ${isLiked ? 'text-brand-orange' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+                                title="Like"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill={isLiked ? "currentColor" : "none"}>
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
                                 </svg>
-                                Copy link
+                                <span className="text-[13px] font-sans">{(localLikes.length > 0) ? (localLikes.length >= 1000 ? (localLikes.length / 1000).toFixed(1) + 'K' : localLikes.length) : ''}</span>
                             </button>
-                            <div className="h-px bg-gray-100 dark:bg-[#2a2a2a] my-1 mx-2"></div>
-                            <button onClick={() => shareOnSocial('telegram')} className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-[#e0e0e0] hover:bg-gray-50 dark:hover:bg-[#2a2a2a] transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-4 h-4 text-[#24A1DE]">
-                                    <path d="M11.944 0C5.342 0 0 5.348 0 12c0 6.652 5.342 12 11.944 12 6.602 0 11.944-5.348 11.944-12 0-6.652-5.342-12-11.944-12zM17.561 8.24c-.168.804-1.244 5.412-1.792 7.502-.232.884-.556 1.18-.872 1.212-.68.064-1.196-.448-1.856-.884-1.036-.676-1.62-.1-2.204.288-.132.088-2.316 2.212-2.356 2.388-.004.024-.008.084-.04.108-.032.024-.076.012-.108 0-.04-.008-.684-.232-1.284-.424l-1.624-.512c-.352-.112-.632-.172-.608-.364.012-.1-.032-.196.252-.328 1.868-.816 5.068-2.124 5.86-2.436.54-.208 1.12-.312 1.512-.312.332 0 .54.012.724.036.328.052.88.352.996.684.116.332.116.616.084.884l-.364 1.708c-.068.324-.26.6-.548.74s-.632.116-.916-.076l-.68-.444c-.26-.172-.416-.46-.416-.768v-.004l3.196-1.504c.1-.048.2-.072.3-.072.2 0 .38.084.492.236.14.192.152.448.04.656l-2.028 3.736s-.104.184-.288.24-.388-.004-.564-.176l-.428-.416c-.232-.224-.352-.536-.34-.848.016-.312.16-.604.4-.8l2.964-2.42c.164-.132.256-.332.256-.54s-.096-.408-.26-.54c-.164-.132-.388-.204-.616-.204s-.452.072-.616.204l-3.328 2.716s-1.192.972-2.684 0L17.561 8.24z" />
+
+                            <Link
+                                href={`/posts/${post._id}#comments`}
+                                className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                title="Comment"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
                                 </svg>
-                                Telegram
-                            </button>
-                            <button onClick={() => shareOnSocial('whatsapp')} className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-[#e0e0e0] hover:bg-gray-50 dark:hover:bg-[#2a2a2a] transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-4 h-4 text-[#25D366]">
-                                    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.53 1.036 3.534l-.067.227c-.231.785-.5 1.7-.751 2.553l-.155.526 2.656-.697.58-.152.062-.016a5.751 5.751 0 0 0 2.407.533c3.18 0 5.766-2.586 5.767-5.766 0-3.18-2.586-5.766-5.767-5.766zm3.361 8.13c-.145.408-.737.76-1.02.798-.186.025-.43.045-1.157-.251-1.341-.546-2.228-1.928-2.295-2.016-.067-.089-1.114-1.482-1.114-2.81 0-1.328.694-1.977.94-2.245l.178-.195a.443.443 0 0 1 .324-.153l.138.002.324.015c.108.005.216.01.293.018l.113.012c.1.011.168.02.241.171l.073.155c.205.437.494 1.054.538 1.144l.035.07c.07.142.115.234.022.421l-.042.083c-.042.083-.1.198-.2.315-.099.117-.209.245-.298.334-.1.101-.205.21-.089.408.116.198.514.848 1.101 1.373.757.676 1.391.886 1.587.984l.049.025c.198.1.313.082.43-.053l.035-.04c.168-.194.398-.534.542-.741l.056-.081c.089-.129.176-.11.298-.065l.08.031c.4.156 1.272.631 1.492.74l.065.032c.118.058.196.097.225.145l.019.034c.067.12.067.689-.224 1.504z" />
+                                <span className="text-[13px] font-sans">{post.commentCount > 0 ? post.commentCount : ''}</span>
+                            </Link>
+
+                            <button
+                                onClick={handleRepostClick}
+                                className={`flex items-center gap-1.5 transition-colors duration-300 ${isReposted ? 'text-brand-orange' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+                                title="Repost"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M17 2l4 4-4 4"></path>
+                                    <path d="M3 11v-1a4 4 0 0 1 4-4h14"></path>
+                                    <path d="M7 22l-4-4 4-4"></path>
+                                    <path d="M21 13v1a4 4 0 0 1-4 4H3"></path>
                                 </svg>
-                                WhatsApp
-                            </button>
-                            <button onClick={() => shareOnSocial('x')} className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-[#e0e0e0] hover:bg-gray-50 dark:hover:bg-[#2a2a2a] transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-4 h-4 text-black dark:text-white">
-                                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                                </svg>
-                                X (Twitter)
+                                <span className="text-[13px] font-sans">{(localReposts.length > 0) ? (localReposts.length >= 1000 ? (localLikes.length / 1000).toFixed(1) + 'K' : localReposts.length) : ''}</span>
                             </button>
                         </div>
-                    )}
+
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={handleBookmarkClick}
+                                className={`transition-colors ${localIsBookmarked ? 'text-brand-orange' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+                                title="Save to Reading List"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill={localIsBookmarked ? "currentColor" : "none"}>
+                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"></path>
+                                </svg>
+                            </button>
+
+                            <div className="relative">
+                                <button
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShareOpen(!shareOpen); }}
+                                    className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                    title="Share"
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                                        <polyline points="16 6 12 2 8 6"></polyline>
+                                        <line x1="12" y1="2" x2="12" y2="15"></line>
+                                    </svg>
+                                </button>
+
+                                {shareOpen && (
+                                    <div className="absolute right-0 bottom-full mb-2 bg-white dark:bg-[#1f1f1f] border border-gray-100 dark:border-[#333] rounded-xl shadow-2xl p-2 min-w-[180px] z-[100] animate-in fade-in slide-in-from-bottom-2 duration-200" ref={shareRef}>
+                                        <button onClick={() => shareOnSocial('x')} className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg transition-colors font-sans">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg>
+                                            Share on X
+                                        </button>
+                                        <button onClick={() => shareOnSocial('telegram')} className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg transition-colors font-sans">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                                            Telegram
+                                        </button>
+                                        <button onClick={() => shareOnSocial('whatsapp')} className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg transition-colors font-sans">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l2.28-2.28a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                            WhatsApp
+                                        </button>
+                                        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); copyToClipboard(); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg transition-colors border-t border-gray-100 dark:border-[#333] mt-1 pt-2 font-sans">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                                            Copy link
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Category pill */}
-                <span className="ml-auto text-xs bg-gray-100 dark:bg-[#252525] px-2.5 py-1 rounded-full text-gray-600 dark:text-[#999999] font-medium">
-                    {post.categories?.[0]?.name || 'Story'}
-                </span>
+                {/* Cover Image */}
+                {coverImageUrl && (
+                    <Link href={`/posts/${post._id}`} className="shrink-0 w-20 h-20 sm:w-28 sm:h-24 md:w-36 md:h-28 rounded-sm overflow-hidden border border-gray-50 dark:border-white/5">
+                        <img
+                            src={coverImageUrl}
+                            alt={post.title}
+                            className="w-full h-full object-cover"
+                        />
+                    </Link>
+                )}
             </div>
         </article>
     );

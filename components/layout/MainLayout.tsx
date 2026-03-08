@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
-import { MobileHeader } from './MobileHeader';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from '../providers/ThemeProvider';
+import { TopHeader } from './TopHeader';
+import { RightAside } from './RightAside';
 import api from '../../services/api';
 
 export interface User {
@@ -20,8 +21,18 @@ interface MainLayoutProps {
 
 export const MainLayout: React.FC<MainLayoutProps> = ({ children, currentUser }) => {
     const router = useRouter();
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const { theme, toggleTheme } = useTheme();
+    const pathname = usePathname();
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const { theme } = useTheme();
+
+    useEffect(() => {
+        // Initial state logic: close sidebar on mobile by default
+        if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+            setIsSidebarOpen(false);
+        }
+    }, []);
+
+    const isPostPage = pathname?.startsWith('/posts/');
 
     const handleLogout = async () => {
         try {
@@ -34,70 +45,56 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children, currentUser })
     };
 
     return (
-        <div className="min-h-screen bg-white dark:bg-[#191919] transition-colors duration-300">
-            {/* Desktop Sidebar */}
-            <Sidebar
+        <div className="min-h-screen bg-[var(--warm-paper)] dark:bg-[#0f0e0d] transition-colors duration-500 relative selection:bg-brand-orange/10 dark:selection:bg-brand-orange/20 font-sans">
+            {/* Background Gradients */}
+            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-orange-50/50 dark:bg-orange-950/5 blur-[120px] rounded-full" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-50/50 dark:bg-purple-950/5 blur-[120px] rounded-full" />
+            </div>
+
+            <TopHeader
+                onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 currentUser={currentUser}
-                onLogout={handleLogout}
-                className="hidden lg:flex flex-col fixed inset-y-0 left-0 z-50 w-20 xl:w-72"
             />
 
-            {/* Mobile Header */}
-            <MobileHeader onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
+            {/* Layout Wrapper */}
+            <div className="flex pt-16 min-h-screen relative z-10 w-full max-w-[1500px] mx-auto">
+                {/* Column 1: Persistent Desktop Sidebar */}
+                <aside className={`hidden lg:block sticky top-16 h-[calc(100vh-64px)] overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-[280px] opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}>
+                    <Sidebar
+                        currentUser={currentUser}
+                        onLogout={handleLogout}
+                        className="w-full h-full border-r border-gray-100 dark:border-[#2a2a2a]"
+                    />
+                </aside>
 
-            {/* Mobile Sidebar Overlay (could be improved into a Drawer) */}
-            {isMobileMenuOpen && (
-                <div className="lg:hidden fixed inset-0 z-50 bg-black/50" onClick={() => setIsMobileMenuOpen(false)}>
-                    <div className="bg-white dark:bg-[#1f1f1f] w-64 h-full" onClick={e => e.stopPropagation()}>
+                {/* Mobile Sidebar Overlay & Drawer */}
+                <div
+                    className={`lg:hidden fixed inset-0 z-[100] transition-all duration-300 ${isSidebarOpen ? 'bg-black/20 backdrop-blur-[2px] pointer-events-auto' : 'bg-transparent backdrop-blur-0 pointer-events-none'}`}
+                    onClick={() => setIsSidebarOpen(false)}
+                >
+                    <div
+                        className={`absolute top-16 left-0 bottom-0 w-[280px] bg-white dark:bg-[#0f0f0f] shadow-2xl transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+                        onClick={e => e.stopPropagation()}
+                    >
                         <Sidebar
                             currentUser={currentUser}
                             onLogout={handleLogout}
-                            isMobile={true}
-                            className="flex flex-col w-full h-full"
+                            className="w-full h-full"
                         />
                     </div>
                 </div>
-            )}
 
-            {/* Theme Toggle — Top Right */}
-            <button
-                onClick={toggleTheme}
-                className="fixed top-5 right-5 z-50 hidden lg:flex items-center justify-center w-10 h-10 rounded-full bg-white/80 dark:bg-[#252525]/80 backdrop-blur-md border border-gray-200 dark:border-[#333333] shadow-sm hover:shadow-md hover:scale-110 active:scale-95 transition-all duration-200 group"
-                title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-                aria-label="Toggle theme"
-            >
-                <div className="relative w-5 h-5">
-                    {/* Sun icon */}
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth={1.8}
-                        stroke="currentColor"
-                        className={`w-5 h-5 absolute inset-0 text-amber-500 transition-all duration-300 ${theme === 'dark' ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-50'}`}
-                    >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
-                    </svg>
-                    {/* Moon icon */}
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth={1.8}
-                        stroke="currentColor"
-                        className={`w-5 h-5 absolute inset-0 text-indigo-500 transition-all duration-300 ${theme === 'light' ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-90 scale-50'}`}
-                    >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
-                    </svg>
-                </div>
-            </button>
+                {/* Column 2: Main Content Area (Center) */}
+                <main className={`flex-1 min-w-0 py-6 px-4 sm:px-6 lg:px-12`}>
+                    <div className={`${isPostPage ? 'max-w-3xl mx-auto' : 'max-w-[720px] mx-auto'}`}>
+                        {children}
+                    </div>
+                </main>
 
-            {/* Main Content Area */}
-            <main className="lg:ml-20 xl:ml-72 min-h-screen transition-all duration-300">
-                <div className="max-w-7xl mx-auto">
-                    {children}
-                </div>
-            </main>
+                {/* Column 3: Right Aside (Staff Picks) */}
+                {pathname === '/feed' && <RightAside />}
+            </div>
         </div>
     );
 };

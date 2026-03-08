@@ -52,6 +52,18 @@ export const useTopPosts = () => {
     });
 };
 
+export const useTopUsers = (limit = 20) => {
+    return useQuery({
+        queryKey: ['topUsers', limit],
+        queryFn: async () => {
+            const res = await api.get(`/users/top?limit=${limit}`);
+            return res.data.data || res.data || [];
+        },
+        staleTime: 5 * 60 * 1000,
+        retry: false,
+    });
+};
+
 // --- MUTATIONS ---
 
 export const useLikePost = () => {
@@ -94,6 +106,28 @@ export const useDeletePost = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['posts'] });
             queryClient.invalidateQueries({ queryKey: ['topPosts'] });
+        },
+    });
+};
+
+export const useUserBookmarks = () => {
+    return useQuery({
+        queryKey: ['userBookmarks'],
+        queryFn: async () => {
+            const res = await api.get('/users/bookmarks/all');
+            return res.data.data || res.data || [];
+        },
+        retry: false,
+    });
+};
+
+export const useBookmarkPost = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (postId: string) => api.post(`/users/bookmarks/${postId}`),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['userBookmarks'] });
+            queryClient.invalidateQueries({ queryKey: ['posts'] });
         },
     });
 };

@@ -3,53 +3,358 @@
 @custom-variant dark (&:where(.dark *));
 
 @theme {
-  --font-serif: "Charter", "Bitstream Charter", "Sitka Text", "Cambria", "serif";
-  --font-sans: "Soehne", "Helvetica Neue", "Helvetica", "Arial", "sans-serif";
+  --font-serif: "Charter", "Bitstream Charter", "Sitka Text", "Cambria", "Source Serif Pro", "serif";
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  --font-display: var(--font-sans);
+
+  /* Medium Aesthetic Colors */
+  --brand-orange: #e8440a;
+  --color-brand-orange: #e8440a;
+  --color-ink-black: #191919;
+  --color-warm-paper: #ffffff;
+  --color-ink-soft: #757575;
+  --color-ink: #292929;
+
+  /* Premium Design Tokens */
+  --cream: var(--color-warm-paper);
+  --ink: var(--color-ink);
+  --ink2: #191919;
+  --orange: var(--brand-orange);
+  --orange-soft: rgba(232, 68, 10, 0.08);
+  --tan: #c4aa88;
+  --tan-light: #ddd0be;
 }
 
 @layer base {
   body {
-    @apply bg-white text-gray-900 font-serif antialiased;
+    @apply bg-[var(--cream)] text-[var(--ink)] antialiased;
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.5;
     font-feature-settings: "kern", "liga", "clig", "calt";
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   .dark body {
-    background-color: #0a0a0a;
-    color: #e8e8e8;
+    @apply bg-[#0f0f0f] text-[#d1d1d1];
   }
 
   h1,
   h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    @apply font-bold tracking-tight text-black;
+  h3 {
+    @apply font-sans font-bold tracking-tight text-[#292929];
+  }
+
+  /* Post Titles are Serif in Medium */
+  .post-title {
+    @apply font-serif font-bold tracking-[-0.01em] text-[#292929] leading-[1.2];
   }
 
   .dark h1,
   .dark h2,
   .dark h3,
-  .dark h4,
-  .dark h5,
-  .dark h6 {
-    color: #e8e8e8;
+  .dark .post-title {
+    @apply text-white;
   }
 
-  /* UI elementlari uchun sans-serif */
-  button,
-  input,
-  textarea,
-  label,
+  p {
+    @apply text-[16px] leading-relaxed text-[#292929]/80;
+  }
+
+  .dark p {
+    @apply text-[#b3b3b3];
+  }
+
+  /* Interactive Elements */
+  a {
+    @apply transition-colors duration-200;
+  }
+
+  button {
+    @apply cursor-pointer transition-all duration-200;
+  }
+
+  /* UI elements */
   nav,
-  .font-sans {
+  .ui-text,
+  .meta-text {
     font-family: var(--font-sans);
+    font-size: 14px;
+    letter-spacing: -0.01em;
   }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity .8s cubic-bezier(.22, 1, .36, 1), transform .8s cubic-bezier(.22, 1, .36, 1);
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Custom Cursor Styles */
+  .cursor {
+    @apply fixed pointer-events-none hidden md:block;
+    z-index: 9999;
+    background: var(--orange);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width .2s, height .2s;
+  }
+
+  .cursor-ring {
+    @apply fixed pointer-events-none hidden md:block;
+    z-index: 9998;
+    border: 1.5px solid var(--ink);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: all .12s ease-out;
+  }
+
+  /* ── Tiptap rich text editor ── */
+  .tiptap p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    color: #adb5bd;
+    pointer-events: none;
+    height: 0;
+  }
+
+  .dark .tiptap p.is-editor-empty:first-child::before {
+    color: #555;
+  }
+
+  .tiptap {
+    outline: none;
+  }
+
+  .tiptap img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .tiptap blockquote {
+    border-left: 3px solid var(--brand-orange);
+    padding-left: 1.25rem;
+    margin-left: 0;
+    color: #555;
+    font-style: italic;
+  }
+
+  .dark .tiptap blockquote {
+    color: #999;
+  }
+
+  .tiptap code {
+    background: rgba(0, 0, 0, 0.06);
+    padding: 0.2em 0.45em;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  }
+
+  .dark .tiptap code {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .tiptap pre {
+    background: #1a1a1a;
+    color: #e2e8f0;
+    padding: 1rem 1.25rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+  }
+
+  .tiptap pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+  }
+
+  /* ── Rich content (post detail view) ── */
+  .rich-content h1 {
+    font-size: 2em;
+    font-weight: 800;
+    margin: 1.5rem 0 1rem;
+    line-height: 1.15;
+  }
+
+  .rich-content h2 {
+    font-size: 1.5em;
+    font-weight: 700;
+    margin: 1.5rem 0 0.75rem;
+    line-height: 1.2;
+  }
+
+  .rich-content h3 {
+    font-size: 1.25em;
+    font-weight: 700;
+    margin: 1.25rem 0 0.5rem;
+  }
+
+  .rich-content p {
+    margin: 0 0 1em;
+  }
+
+  .rich-content ul {
+    list-style: disc;
+    padding-left: 1.75em;
+    margin: 1em 0;
+  }
+
+  .rich-content ol {
+    list-style: decimal;
+    padding-left: 1.75em;
+    margin: 1em 0;
+  }
+
+  .rich-content li {
+    margin: 0.35em 0;
+  }
+
+  .rich-content strong {
+    font-weight: 700;
+  }
+
+  .rich-content em {
+    font-style: italic;
+  }
+
+  .rich-content s {
+    text-decoration: line-through;
+  }
+
+  .rich-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .rich-content blockquote {
+    border-left: 3px solid var(--brand-orange);
+    padding-left: 1.25rem;
+    margin: 1.5rem 0;
+    color: #555;
+    font-style: italic;
+  }
+
+  .dark .rich-content blockquote {
+    color: #999;
+  }
+
+  .rich-content pre {
+    background: #1a1a1a;
+    color: #e2e8f0;
+    padding: 1rem 1.25rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 0.875em;
+  }
+
+  .rich-content code {
+    background: rgba(0, 0, 0, 0.06);
+    padding: 0.2em 0.45em;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+
+  .dark .rich-content code {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+@keyframes orbFloat {
+
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  50% {
+    transform: translate(30px, -30px);
+  }
+}
+
+@keyframes bgCharDrift {
+  from {
+    transform: translateY(-50%) translateX(0);
+  }
+
+  to {
+    transform: translateY(-52%) translateX(-20px);
+  }
+}
+
+@keyframes ruleGrow {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes letterPulse {
+
+  0%,
+  100% {
+    opacity: .6;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+}
+
+@keyframes scrollLine {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  50% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(100%);
   }
 }

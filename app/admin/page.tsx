@@ -1,9 +1,9 @@
+// ... (imports and API setup remains similar)
 "use client";
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import { AdminSidebar } from '../../components/admin/AdminSidebar';
-
 
 const API_BASE = '/api';
 axios.defaults.withCredentials = true;
@@ -11,22 +11,64 @@ axios.defaults.withCredentials = true;
 export default function AdminDashboard() {
   const [users, setUsers] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [stats, setStats] = useState({
+    totalPosts: 0,
+    totalViews: 0,
+    totalReactions: 0,
+    newUsers: 0
+  });
   const [loading, setLoading] = useState(true);
 
-  // Kategoriya uchun state-lar
   const [newCat, setNewCat] = useState('');
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [uRes, cRes] = await Promise.all([
+      const [uRes, cRes, pRes] = await Promise.all([
         axios.get(`${API_BASE}/users`),
-        axios.get(`${API_BASE}/categories`)
+        axios.get(`${API_BASE}/categories`),
+        axios.get(`${API_BASE}/posts?limit=1000&status=ALL`) // Fetch more for stats computation
       ]);
-      setUsers(uRes.data.data || uRes.data || []);
-      setCategories(cRes.data.data || cRes.data || []);
+
+      const usersData = uRes.data.data || uRes.data || [];
+      const categoriesData = cRes.data.data || cRes.data || [];
+      const postsData = pRes.data.data || [];
+      const postsPagination = pRes.data.pagination || { total: postsData.length };
+
+      setUsers(usersData);
+      setCategories(categoriesData);
+
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+      // Compute Weekly Stats
+      let weeklyViews = 0;
+      let weeklyReactions = 0;
+
+      postsData.forEach((post: any) => {
+        const postDate = new Date(post.createdAt);
+        if (postDate >= oneWeekAgo) {
+          weeklyViews += (post.views || 0);
+          // Reactions = likes + dislikes
+          weeklyReactions += (post.likes?.length || 0) + (post.dislikes?.length || 0);
+        }
+      });
+
+      const weeklyNewUsers = usersData.filter((u: any) => {
+        const created = new Date(u.createdAt);
+        return created >= oneWeekAgo;
+      }).length;
+
+      setStats({
+        totalPosts: postsPagination.total,
+        totalViews: weeklyViews,
+        totalReactions: weeklyReactions,
+        newUsers: weeklyNewUsers
+      });
+
     } catch (err) {
       console.error("Ma'lumot yuklashda xato:", err);
     } finally {
@@ -36,7 +78,6 @@ export default function AdminDashboard() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // --- KATEGORIYA AMALLARI ---
   const handleCreateCategory = async () => {
     if (!newCat.trim()) return;
     try {
@@ -62,163 +103,166 @@ export default function AdminDashboard() {
     } catch (err) { alert("O'chirishda xato!"); }
   };
 
-  // Mobile menu state
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
-      <div className="animate-bounce text-2xl font-black italic tracking-tighter">Admin Panel Loading...</div>
+    <div className="min-h-screen flex items-center justify-center bg-[var(--warm-paper)]">
+      <div className="animate-pulse flex flex-col items-center gap-4">
+        <div className="text-2xl font-serif font-black italic tracking-tighter text-[#e8440a]">DevStories</div>
+        <div className="h-1 w-16 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-full bg-[#e8440a] animate-[ruleGrow_1.5s_infinite]" />
+        </div>
+      </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex font-sans">
+    <div className="min-h-screen bg-[var(--warm-paper)] flex font-sans text-[var(--ink-black)] selection:bg-[#e8440a]/10">
 
       {/* DESKTOP SIDEBAR */}
-      <AdminSidebar className="w-72 hidden lg:flex sticky top-0 h-screen" />
+      <AdminSidebar className="w-[280px] hidden lg:flex sticky top-0 h-screen" />
 
       {/* MOBILE DRAWER */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 lg:hidden" onClick={() => setMobileMenuOpen(false)}>
-          <div className="w-64 h-full" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm lg:hidden animate-in fade-in duration-300" onClick={() => setMobileMenuOpen(false)}>
+          <div className="w-[280px] h-full animate-in slide-in-from-left duration-500" onClick={e => e.stopPropagation()}>
             <AdminSidebar className="h-full" onLinkClick={() => setMobileMenuOpen(false)} />
           </div>
         </div>
       )}
 
       {/* MAIN CONTENT */}
-      <main className="flex-1 p-6 lg:p-12 overflow-y-auto">
+      <main className="flex-1 p-4 md:p-8 lg:p-10 xl:p-12 overflow-y-auto">
 
-        {/* MOBILE HEADER */}
-        <div className="lg:hidden flex justify-between items-center mb-8">
-          <div>
-            <span className="text-2xl font-black tracking-tighter italic text-black">DevStories</span>
-            <p className="text-[10px] text-gray-400 font-bold tracking-widest uppercase">Admin</p>
+        {/* TOP HEADER */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10">
+          <div className="animate-fade-up">
+            <h1 className="font-serif text-3xl md:text-4xl font-black tracking-tight mb-2">Dashboard</h1>
+            <p className="text-gray-400 font-bold text-[10px] sm:text-xs tracking-wide">Tizim holati va statistika</p>
           </div>
-          <button
-            onClick={() => setMobileMenuOpen(true)}
-            className="p-2 -mr-2 text-black"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-            </svg>
-          </button>
+
+          <div className="flex gap-3 w-full md:w-auto overflow-x-auto pb-4 scrollbar-none animate-fade-up [animation-delay:100ms] -mx-4 px-4 md:mx-0 md:px-0">
+            <Link href="/admin/users" className="bg-white px-5 py-4 rounded-2xl border border-gray-100 shadow-sm min-w-[100px] transition-transform hover:-translate-y-1 duration-300 group">
+              <div className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 group-hover:text-[#e8440a] transition-colors">Users</div>
+              <div className="text-xl font-black font-serif leading-none tracking-tight">{users.length}</div>
+            </Link>
+            {[
+              { label: 'Posts', value: stats.totalPosts },
+              { label: 'Cat', value: categories.length }
+            ].map((stat, i) => (
+              <div key={i} className="bg-white px-5 py-4 rounded-2xl border border-gray-100 shadow-sm min-w-[100px] transition-transform hover:-translate-y-1 duration-300">
+                <div className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">{stat.label}</div>
+                <div className="text-xl font-black font-serif leading-none tracking-tight">{stat.value}</div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <header className="flex justify-between items-end mb-12">
-          <div>
-            <h1 className="text-5xl font-black tracking-tighter text-black">Dashboard</h1>
-            <p className="text-gray-400 font-medium mt-2">Xush kelibsiz, Admin. Tizim to'liq nazorat ostida.</p>
-          </div>
-          <div className="hidden sm:flex space-x-4">
-            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm text-center min-w-[120px]">
-              <p className="text-[10px] font-black text-gray-400 uppercase">Users</p>
-              <p className="text-2xl font-black">{users.length}</p>
+        {/* MAIN STATS GRID */}
+        <div className="animate-fade-up [animation-delay:200ms] bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            <div className="p-8 md:p-10 border-b md:border-b-0 md:border-r border-gray-50 group hover:bg-gray-50/30 transition-colors">
+              <div className="text-3xl font-black font-serif mb-1 tracking-tight leading-none">{stats.totalViews.toLocaleString()}</div>
+              <div className="text-gray-400 font-bold text-xs mb-3">Haftalik ko'rishlar</div>
+              <div className="text-green-500 font-black text-[10px] flex items-center gap-1">
+                ↑ 12% bu hafta
+              </div>
             </div>
-            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm text-center min-w-[120px]">
-              <p className="text-[10px] font-black text-gray-400 uppercase">Categories</p>
-              <p className="text-2xl font-black">{categories.length}</p>
+            <div className="p-8 md:p-10 group hover:bg-gray-50/30 transition-colors">
+              <div className="text-3xl font-black font-serif mb-1 tracking-tight leading-none">89%</div>
+              <div className="text-gray-400 font-bold text-xs mb-3">O'rtacha o'qish</div>
+              <div className="text-green-500 font-black text-[10px] flex items-center gap-1">
+                ↑ 3% o'sdi
+              </div>
+            </div>
+            <div className="p-8 md:p-10 border-t border-gray-50 md:border-r group hover:bg-gray-50/30 transition-colors">
+              <div className="text-3xl font-black font-serif mb-1 tracking-tight leading-none">{stats.newUsers}</div>
+              <div className="text-gray-400 font-bold text-xs mb-3">Haftalik yangi userlar</div>
+              <div className="text-green-500 font-black text-[10px] flex items-center gap-1">
+                ↑ {stats.newUsers > 0 ? 'Haftalik o\'sish' : '0%'}
+              </div>
+            </div>
+            <div className="p-8 md:p-10 border-t border-gray-50 group hover:bg-gray-50/30 transition-colors">
+              <div className="text-3xl font-black font-serif mb-1 tracking-tight leading-none">{stats.totalReactions.toLocaleString()}</div>
+              <div className="text-gray-400 font-bold text-xs mb-3">Haftalik reaksiyalar</div>
+              <div className="text-green-500 font-black text-[10px] flex items-center gap-1">
+                ↑ 28% o'sdi
+              </div>
             </div>
           </div>
-        </header>
+        </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 md:gap-10">
 
-          {/* 1. USERS LIST - 7/12 width */}
-          <section className="xl:col-span-7 bg-white rounded-[32px] p-8 shadow-sm border border-gray-100">
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-8">System Users</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-gray-50 text-[10px] font-black uppercase text-gray-300">
-                    <th className="pb-4">Username</th>
-                    <th className="pb-4">Role</th>
-                    <th className="pb-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {users.map(user => (
-                    <tr key={user._id} className="group hover:bg-gray-50/50 transition">
-                      <td className="py-5">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-[10px] font-black">
-                            {user.userName?.charAt(0).toUpperCase()}
-                          </div>
-                          <span className="font-bold text-gray-800">{user.userName}</span>
-                        </div>
-                      </td>
-                      <td className="py-5">
-                        <span className={`text-[9px] font-black uppercase px-2 py-1 rounded ${user.role === 'admin' ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-500'}`}>
-                          {user.role}
-                        </span>
-                      </td>
-                      <td className="py-5 text-right">
-                        <Link href={`/profile/${user._id}`} className="bg-black text-white text-[10px] font-black px-4 py-2 rounded-full hover:bg-gray-800 transition whitespace-nowrap">
-                          VIEW PROFILE
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* USERS LIST */}
+          <section className="animate-fade-up [animation-delay:300ms] xl:col-span-7 bg-white rounded-[32px] p-8 md:p-10 border border-gray-100 shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-6">
+              <button className="text-[#e8440a] font-black text-[9px] tracking-widest uppercase flex items-center gap-2 hover:opacity-70 transition-opacity">
+                + Qo'shish
+              </button>
+            </div>
+            <h3 className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400 mb-8">System Users</h3>
+
+            <div className="space-y-5">
+              <div className="grid grid-cols-12 gap-4 pb-3 border-b border-gray-50 text-[9px] font-black uppercase tracking-widest text-gray-300">
+                <div className="col-span-8">Foydalanuvchi</div>
+                <div className="col-span-4 text-right">Rol</div>
+              </div>
+
+              {users.slice(0, 6).map(user => (
+                <div key={user._id} className="grid grid-cols-12 gap-4 items-center group cursor-pointer">
+                  <div className="col-span-8 flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-white shadow-md ${user.role === 'admin' ? 'bg-[#e8440a] shadow-[#e8440a]/10' : 'bg-[#e8440a]/80 shadow-orange-500/10'
+                      }`}>
+                      {user.userName?.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm group-hover:text-[#e8440a] transition-colors">{user.userName}</div>
+                      <div className="text-[11px] text-gray-400 font-medium truncate max-w-[120px] md:max-w-none">{user.email || 'user@dev.uz'}</div>
+                    </div>
+                  </div>
+                  <div className="col-span-4 text-right">
+                    <span className={`text-[8px] font-black uppercase px-2 py-1 rounded-lg ${user.role === 'admin' ? 'bg-orange-50 text-[#e8440a]' : 'bg-gray-100 text-gray-500'
+                      }`}>
+                      {user.role === 'admin' ? 'ADMIN' : 'USER'}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
 
-          {/* 2. CATEGORIES MANAGEMENT - 5/12 width */}
-          <section className="xl:col-span-5 space-y-8">
+          {/* RIGHT COLUMN */}
+          <div className="xl:col-span-5 space-y-8 md:gap-10">
 
-            {/* Create Category Card */}
-            <div className="bg-white rounded-[32px] p-8 shadow-sm border border-gray-100">
-              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-6">Create Category</h3>
-              <div className="flex space-x-3">
-                <input
-                  className="flex-1 bg-gray-50 border-none rounded-2xl px-5 py-4 font-bold text-sm outline-none focus:ring-2 ring-black transition"
-                  placeholder="Category name..."
-                  value={newCat}
-                  onChange={(e) => setNewCat(e.target.value)}
-                />
-                <button
-                  onClick={handleCreateCategory}
-                  className="bg-black text-white px-6 py-4 rounded-2xl font-black text-[10px] uppercase hover:bg-gray-800 transition shadow-lg shadow-black/10"
-                >
-                  ADD
-                </button>
-              </div>
-            </div>
-
-            {/* List Category Card */}
-            <div className="bg-white rounded-[32px] p-8 shadow-sm border border-gray-100">
-              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-6">Manage Categories</h3>
-              <div className="space-y-3">
-                {categories.map(cat => (
-                  <div key={cat._id} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-transparent hover:border-gray-200 transition group">
-                    {editingCatId === cat._id ? (
-                      <div className="flex flex-1 space-x-2">
-                        <input
-                          className="flex-1 bg-white rounded-lg px-2 py-1 font-bold outline-none border-2 border-black"
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          autoFocus
-                        />
-                        <button onClick={() => handleUpdateCategory(cat._id)} className="text-green-600 font-black text-[10px]">SAVE</button>
-                        <button onClick={() => setEditingCatId(null)} className="text-gray-400 font-black text-[10px]">CANCEL</button>
-                      </div>
-                    ) : (
-                      <>
-                        <span className="font-bold text-gray-800">{cat.name}</span>
-                        <div className="flex space-x-4 opacity-0 group-hover:opacity-100 transition">
-                          <button onClick={() => { setEditingCatId(cat._id); setEditName(cat.name) }} className="text-blue-500 font-black text-[10px] hover:underline">EDIT</button>
-                          <button onClick={() => handleDeleteCategory(cat._id)} className="text-red-400 font-black text-[10px] hover:underline">DELETE</button>
-                        </div>
-                      </>
-                    )}
-                  </div>
+            {/* QUICK ACTIONS - Now taking more prominence */}
+            <section className="animate-fade-up [animation-delay:400ms] bg-white rounded-[32px] p-8 md:p-10 border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
+              <h3 className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400 mb-8">Tezkor amallar</h3>
+              <div className="space-y-4">
+                {[
+                  { label: 'Yangi maqola yozish', icon: '✍️', color: 'bg-orange-50 text-[#e8440a]', href: '/feed' },
+                  { label: 'Maqolalarni eksport qilish', icon: '📥', color: 'bg-gray-50 text-[#16120E]' },
+                  { label: 'Barcha foydalanuvchilarga xabar', icon: '🔔', color: 'bg-gray-50 text-[#16120E]' },
+                  { label: 'Tizim xavfsizligini tekshirish', icon: '🛡️', color: 'bg-orange-50 text-[#e8440a]' },
+                  { label: 'Cache tozalash', icon: '🗑️', color: 'bg-red-50 text-[#e8440a]' }
+                ].map((action, i) => (
+                  <button key={i} className={`w-full flex items-center gap-4 px-6 py-5 rounded-2xl font-bold text-xs transition-all hover:scale-[1.01] active:scale-[0.99] border border-transparent hover:border-gray-100 ${action.color}`}>
+                    <span className="text-xl">{action.icon}</span>
+                    {action.label}
+                  </button>
                 ))}
               </div>
-            </div>
-          </section>
+            </section>
 
+          </div>
         </div>
+
+        {/* MOBILE TRIGGER */}
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          className="fixed bottom-8 right-8 lg:hidden w-14 h-14 rounded-full bg-[#0A0908] text-white flex items-center justify-center shadow-xl z-40 transition-transform active:scale-90"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+        </button>
+
       </main>
     </div>
   );

@@ -8,10 +8,30 @@ const api = axios.create({
     },
 });
 
-api.interceptors.response.use(
-    (response) => response,
+api.interceptors.request.use(
+    (config) => {
+        console.log(`[API REQUEST] ${config.method?.toUpperCase()} ${config.url}`, config.data || '');
+        return config;
+    },
     (error) => {
-        // Global error handling logic can be added here
+        console.error('[API REQUEST ERROR]', error);
+        return Promise.reject(error);
+    }
+);
+
+api.interceptors.response.use(
+    (response) => {
+        console.log(`[API RESPONSE] ${response.status} ${response.config.url}`);
+        return response;
+    },
+    (error) => {
+        const isAuthCheck = error.config?.url?.includes('/users/profile') || error.config?.url?.includes('/users/bookmarks/all');
+        if (error.response?.status === 401 && isAuthCheck) {
+            // Suppress noise for expected auth checks
+            return Promise.reject(error);
+        }
+
+        console.error(`[API ERROR] ${error.response?.status} ${error.config?.url}`, error.response?.data || error.message);
         return Promise.reject(error);
     }
 );
