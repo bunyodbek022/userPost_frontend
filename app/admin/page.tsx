@@ -252,6 +252,68 @@ export default function AdminDashboard() {
               </div>
             </section>
 
+            {/* CATEGORIES MANAGEMENT */}
+            <section className="animate-fade-up [animation-delay:500ms] bg-white rounded-[32px] p-8 md:p-10 border border-gray-100 shadow-sm overflow-hidden">
+              <h3 className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400 mb-6">Kategoriyalar</h3>
+              
+              <div className="flex gap-2 mb-6 pointer-events-auto">
+                <input 
+                  type="text" 
+                  value={newCat} 
+                  onChange={e => setNewCat(e.target.value)}
+                  placeholder="Yangi kategoriya nomi..."
+                  className="flex-1 bg-gray-50 border-none rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-[#e8440a]/20 outline-none"
+                />
+                <button 
+                  onClick={handleCreateCategory}
+                  disabled={!newCat.trim()}
+                  className="bg-[#e8440a] text-white px-5 rounded-xl font-bold text-xs hover:bg-[#d03a08] transition-colors disabled:opacity-50"
+                >
+                  Qo'shish
+                </button>
+              </div>
+
+              <div className="space-y-2 max-h-[300px] overflow-y-auto scrollbar-hide">
+                {categories.map(cat => (
+                  <div key={cat._id} className="flex items-center justify-between group p-3 hover:bg-gray-50 rounded-xl transition-colors border border-transparent hover:border-gray-100">
+                    {editingCatId === cat._id ? (
+                      <div className="flex flex-1 gap-2 mr-2">
+                        <input
+                          type="text"
+                          value={editName}
+                          onChange={e => setEditName(e.target.value)}
+                          className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-[#e8440a] shadow-sm"
+                        />
+                        <button onClick={() => handleUpdateCategory(cat._id)} className="text-[#e8440a] text-xs font-bold px-2 hover:opacity-70 transition-opacity">Saqlash</button>
+                        <button onClick={() => setEditingCatId(null)} className="text-gray-400 text-xs font-bold px-2 hover:opacity-70 transition-opacity">Bekor</button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="font-bold text-sm text-[#16120E]">{cat.name}</div>
+                        <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => { setEditingCatId(cat._id); setEditName(cat.name); }}
+                            className="text-gray-400 hover:text-[#e8440a] text-[10px] uppercase font-black tracking-wider transition-colors"
+                          >
+                            Tahrirlash
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteCategory(cat._id)}
+                            className="text-gray-300 hover:text-red-500 text-[10px] uppercase font-black tracking-wider transition-colors"
+                          >
+                            O'chirish
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+                {categories.length === 0 && (
+                   <div className="text-center py-8 text-xs font-bold text-gray-300 uppercase tracking-widest">Hozircha kategoriyalar yo'q.</div>
+                )}
+              </div>
+            </section>
+
           </div>
         </div>
 

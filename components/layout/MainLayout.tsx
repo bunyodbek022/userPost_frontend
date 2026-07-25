@@ -58,7 +58,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children, currentUser })
             />
 
             {/* Layout Wrapper */}
-            <div className="flex pt-16 min-h-screen relative z-10 w-full max-w-[1500px] mx-auto">
+            <div className="flex pt-16 min-h-screen relative z-10 w-full">
                 {/* Column 1: Persistent Desktop Sidebar */}
                 <aside className={`hidden lg:block sticky top-16 h-[calc(100vh-64px)] overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-[280px] opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}>
                     <Sidebar
