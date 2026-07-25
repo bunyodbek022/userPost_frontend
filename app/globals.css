@@ -23,6 +23,9 @@
   --orange-soft: rgba(232, 68, 10, 0.08);
   --tan: #c4aa88;
   --tan-light: #ddd0be;
+  
+  /* Animations */
+  --animate-fade-up: fadeUp 0.8s ease-out forwards;
 }
 
 @layer base {
