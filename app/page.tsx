@@ -1,7 +1,7 @@
 "use client";
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CustomCursor } from '../components/ui/CustomCursor';
+import { PenTool, Bookmark, BarChart2, Globe, Bell, Search, ArrowRight } from 'lucide-react';
 
 export default function Home() {
   const [stats, setStats] = useState({
@@ -57,245 +57,169 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="selection:bg-brand-orange/30 selection:text-orange-950">
-      <CustomCursor />
-
+    <div className="selection:bg-brand-orange/30 selection:text-orange-950 min-h-screen bg-white">
       {/* NAV */}
-      <nav className="fixed top-0 left-0 right-0 z-50 px-6 md:px-14 py-8 flex items-center mix-blend-multiply pointer-events-none">
-        <Link href="/" className="text-xl md:text-2xl font-serif font-bold tracking-tighter text-[var(--ink)] pointer-events-auto">
-          <span className="text-[var(--orange)] italic">Dev</span>Stories
+      <nav className="fixed top-0 left-0 right-0 z-50 px-6 md:px-14 py-6 flex items-center bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <Link href="/" className="text-xl md:text-2xl font-serif font-bold tracking-tight text-gray-900">
+          <span className="text-orange-600">Dev</span>Stories
         </Link>
-        <div className="ml-auto flex items-center gap-6 md:gap-14 pointer-events-auto">
-          <Link href="/feed" className="hidden md:block text-[10px] font-bold tracking-[0.2em] uppercase text-[var(--ink2)] opacity-60 hover:opacity-100 transition-opacity">Maqolalar</Link>
-          <a href="#" className="hidden md:block text-[10px] font-bold tracking-[0.2em] uppercase text-[var(--ink2)] opacity-60 hover:opacity-100 transition-opacity">Yozuvchilar</a>
-          <Link href="/login" className="bg-[var(--ink)] text-[var(--cream)] px-10 py-3.5 rounded-full text-[10px] font-black tracking-[0.2em] uppercase hover:bg-[var(--orange)] hover:scale-105 transition-all duration-300 shadow-xl shadow-ink/20">
+        <div className="ml-auto flex items-center gap-6 md:gap-10">
+          <Link href="/feed" className="hidden md:block text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Maqolalar</Link>
+          <a href="#" className="hidden md:block text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Yozuvchilar</a>
+          <Link href="/login" className="bg-gray-900 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-800 transition-all shadow-sm">
             Kirish
           </Link>
         </div>
       </nav>
 
       {/* HERO */}
-      <section className="hero min-h-screen relative flex flex-col justify-center px-6 md:px-14 py-32 overflow-hidden bg-[var(--cream)]">
-        {/* Floating Orbs */}
-        <div className="absolute top-[10%] right-[20%] w-[400px] h-[400px] rounded-full bg-brand-orange/5 blur-[100px] animate-orb-float pointer-events-none" />
-        <div className="absolute bottom-[10%] left-[5%] w-[300px] h-[300px] rounded-full bg-[#c4aa88]/15 blur-[80px] animate-orb-float pointer-events-none [animation-direction:reverse] [animation-duration:9s]" />
-
-        {/* Background 'D' */}
-        <div className="absolute right-[-2vw] top-1/2 -translate-y-1/2 font-serif text-[clamp(240px,25vw,400px)] font-black italic select-none pointer-events-none leading-none animate-bg-drift" style={{ WebkitTextStroke: '1.5px var(--tan-light)', color: 'transparent' }}>
-          D
+      <section className="relative pt-40 pb-20 md:pt-48 md:pb-32 px-6 md:px-14 flex flex-col md:flex-row items-center justify-between max-w-7xl mx-auto gap-16">
+        <div className="w-full md:w-1/2 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-50 border border-orange-100 text-orange-600 text-xs font-semibold tracking-wide uppercase mb-6 opacity-0 animate-fade-up">
+            <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+            Yangi platforma
+          </div>
+          
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-gray-900 leading-[1.1] mb-6 opacity-0 animate-fade-up [animation-delay:0.1s]">
+            Dasturlash haqida <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-500">
+              jiddiy suhbatlar.
+            </span>
+          </h1>
+          
+          <p className="text-lg text-gray-600 mb-10 max-w-lg leading-relaxed opacity-0 animate-fade-up [animation-delay:0.2s]">
+            O'zbek tilidagi eng yirik developerlar hamjamiyatiga qo'shiling. Tajribangizni ulashing, bilim oling va o'z portfoliongizni yarating.
+          </p>
+          
+          <div className="flex items-center gap-4 opacity-0 animate-fade-up [animation-delay:0.3s]">
+            <Link href="/register" className="inline-flex items-center gap-2 bg-gray-900 text-white px-8 py-3.5 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5 duration-200">
+              Yozishni boshlash <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link href="/feed" className="inline-flex items-center px-8 py-3.5 text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors">
+              Maqolalarni o'qish
+            </Link>
+          </div>
         </div>
 
-        <div className="relative z-10 max-w-5xl self-start">
-          <div className="w-16 h-[2px] bg-[var(--orange)] mb-10 origin-left animate-rule-grow [animation-delay:0.2s]" />
-          <div className="text-[10px] font-bold tracking-[0.25em] uppercase text-[var(--orange)] mb-6 opacity-0 animate-fade-up [animation-delay:0.4s] [animation-duration:0.6s]">
-            Dev yozuvchilar platformasi — 2026
-          </div>
-
-          <h1 className="font-serif text-[clamp(44px,7.5vw,100px)] font-black leading-[0.95] tracking-tight mb-14 opacity-0 animate-fade-up [animation-delay:0.55s]">
-            G'oyalar<br />
-            <em className="italic text-[var(--orange)] relative px-2">
-              hayotni
-              <span className="absolute left-0 bottom-1 md:bottom-2 right-0 h-1 md:h-2 bg-[var(--orange)]/10 -skew-x-12" />
-            </em><br />
-            o'zgartiradi.
-          </h1>
-
-          <div className="flex flex-col md:flex-row items-baseline gap-12 mt-4 opacity-0 animate-fade-up [animation-delay:0.85s] [animation-duration:0.7s]">
-            <p className="max-w-md text-base md:text-lg leading-relaxed text-[#5a5248] font-medium">
-              O'qish, yozish va tushunishingizni chuqurlashtirish uchun joy. Dunyoning eng ta'sirli developer hikoyalarini kashf eting.
-            </p>
-            <div className="flex flex-wrap items-center gap-6">
-              <Link href="/register" className="group inline-flex items-center gap-4 bg-[var(--ink)] text-[var(--cream)] px-10 py-4.5 rounded-full text-[11px] font-black tracking-[0.2em] uppercase hover:bg-[var(--orange)] hover:-translate-y-1 transition-all duration-300 shadow-2xl shadow-ink/30">
-                O'QISHNI BOSHLANG <span className="text-lg group-hover:translate-x-1 transition-transform">→</span>
-              </Link>
-              <Link href="/register" className="inline-flex items-center px-4 py-4 text-[10px] font-black tracking-[0.2em] uppercase border-b border-[var(--tan)] hover:text-[var(--orange)] hover:border-[var(--orange)] transition-all">
-                Yozuvchi bo'l
-              </Link>
+        {/* Hero Visual */}
+        <div className="w-full md:w-1/2 relative opacity-0 animate-fade-up [animation-delay:0.4s]">
+          <div className="relative rounded-2xl bg-[#0d1117] border border-gray-800 shadow-2xl overflow-hidden aspect-[4/3] w-full max-w-[600px] mx-auto">
+            {/* Window header */}
+            <div className="h-10 bg-[#161b22] border-b border-gray-800 flex items-center px-4 gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+              <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+              <div className="w-3 h-3 rounded-full bg-[#27c93f]"></div>
+            </div>
+            {/* Editor content */}
+            <div className="p-6 font-mono text-sm leading-relaxed text-gray-300">
+              <p className="text-gray-500 mb-2">// Yangi maqola yaratish</p>
+              <p><span className="text-[#ff7b72]">const</span> <span className="text-[#79c0ff]">post</span> <span className="text-[#ff7b72]">=</span> <span className="text-[#ff7b72]">await</span> <span className="text-[#d2a8ff]">createArticle</span>({'{'}</p>
+              <p className="ml-4">title: <span className="text-[#a5d6ff]">'Next.js 14 va React Server Components'</span>,</p>
+              <p className="ml-4">tags: [<span className="text-[#a5d6ff]">'react'</span>, <span className="text-[#a5d6ff]">'nextjs'</span>, <span className="text-[#a5d6ff]">'web'</span>],</p>
+              <p className="ml-4">content: <span className="text-[#a5d6ff]">'Server komponentlari veb dasturlashda yangi sahifa ochdi...'</span>,</p>
+              <p className="ml-4">published: <span className="text-[#79c0ff]">true</span></p>
+              <p>{'}'});</p>
+              <br />
+              <p className="text-[#ff7b72]">console.<span className="text-[#d2a8ff]">log</span>(<span className="text-[#a5d6ff]">'Maqola chop etildi! 🚀'</span>);</p>
+              <div className="w-2 h-4 bg-gray-400 animate-pulse mt-1 inline-block"></div>
             </div>
           </div>
-        </div>
-
-        {/* Scroll Hint */}
-        <div className="absolute bottom-16 left-6 md:left-14 flex items-center gap-5 text-[10px] font-black tracking-[0.2em] uppercase text-[var(--tan)] opacity-0 animate-fade-up [animation-delay:1.5s] [animation-duration:1s]">
-          <div className="relative w-12 h-[1px] bg-[var(--tan)] overflow-hidden">
-            <div className="absolute inset-0 bg-[var(--orange)] -translate-x-full animate-scroll-line" />
-          </div>
-          PASTGA SURING
+          {/* Decorative glow */}
+          <div className="absolute -inset-4 bg-orange-500/10 blur-[100px] -z-10 rounded-full"></div>
         </div>
       </section>
 
-      {/* MARQUEE */}
-      <div className="bg-[var(--ink)] py-6 overflow-hidden flex border-y border-white/5">
-        <div className="flex animate-marquee whitespace-nowrap">
-          {[...Array(2)].map((_, i) => (
-            <div key={i} className="flex">
-              {['Programming', 'Design', 'Open Source', 'Career', 'Architecture', 'Web Dev', 'AI & ML', 'DevOps'].map((cat, j) => (
-                <div key={j} className="flex items-center gap-8 px-12 text-[10px] font-black tracking-[0.3em] uppercase text-white/30 hover:text-white transition-colors cursor-default">
-                  <div className="w-1 h-1 rounded-full bg-[var(--orange)]" />
-                  {cat}
-                </div>
-              ))}
+      {/* STATS */}
+      <section className="stats-section py-16 border-y border-gray-100 bg-gray-50/50">
+        <div className="max-w-7xl mx-auto px-6 md:px-14 grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-px">
+          {[
+            { label: 'Jami maqolalar', value: stats.articles, suffix: '+' },
+            { label: 'Faol yozuvchilar', value: stats.writers, suffix: '+' },
+            { label: 'Oylik o\'quvchilar', value: stats.readers, suffix: '+' },
+            { label: 'O\'rtacha sifat', value: 4.9, suffix: '/5' }
+          ].map((stat, i) => (
+             <div key={i} className="reveal text-center md:border-r border-gray-200 last:border-0 px-4">
+              <div className="text-4xl md:text-5xl font-bold text-gray-900 mb-2 tracking-tight">
+                {typeof stat.value === 'number' && (i === 0 || i === 2) ? stat.value.toLocaleString() : stat.value}{stat.suffix}
+              </div>
+              <div className="text-sm font-medium text-gray-500 uppercase tracking-widest">
+                {stat.label}
+              </div>
             </div>
           ))}
         </div>
-      </div>
-
-      {/* STATS */}
-      <section className="stats-section bg-[var(--tan-light)] grid grid-cols-2 md:grid-cols-4 gap-px border-y border-[var(--tan-light)]">
-        {[
-          { label: 'Jami maqolalar', value: stats.articles, suffix: ',' },
-          { label: 'Faol yozuvchilar', value: stats.writers, suffix: '' },
-          { label: 'Oylik o\'quvchilar', value: stats.readers, suffix: ',' },
-          { label: 'O\'rtacha baho', value: 4.9, suffix: '★' }
-        ].map((stat, i) => (
-          <div key={i} className="reveal bg-[var(--cream)] p-10 md:p-14 hover:bg-[var(--ink)] group transition-colors duration-500 border-r border-[var(--tan-light)] last:border-r-0">
-            <div className="w-8 h-[2px] bg-[var(--orange)] mb-8" />
-            <div className="font-serif text-5xl md:text-6xl font-black mb-3 text-[var(--ink)] group-hover:text-white transition-colors duration-500 leading-none">
-              {typeof stat.value === 'number' && (i === 0 || i === 2) ? stat.value.toLocaleString() : stat.value}{stat.suffix}
-            </div>
-            <div className="text-[10px] font-bold tracking-[0.25em] uppercase text-[#7a7068] group-hover:text-white/40 transition-colors duration-500">
-              {stat.label}
-            </div>
-          </div>
-        ))}
       </section>
 
       {/* FEATURES */}
-      <section className="px-6 md:px-14 py-24 md:py-32 bg-[var(--cream)]">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-10 mb-20 md:mb-24 reveal">
-          <div>
-            <div className="text-[10px] font-black tracking-[0.25em] uppercase text-[var(--orange)] mb-5">Nima uchun DevStories?</div>
-            <h2 className="font-serif text-4xl md:text-[64px] font-black leading-[1.0] tracking-tighter">Dasturchi uchun<br />yaratilgan platforma</h2>
-          </div>
-          <Link href="/register" className="text-[10px] font-black tracking-[0.25em] uppercase border-b-2 border-[var(--tan)] hover:border-[var(--orange)] transition-colors pb-1 mb-2">
-            BARCHA IMKONYATLAR →
-          </Link>
+      <section className="py-24 md:py-32 px-6 md:px-14 max-w-7xl mx-auto">
+        <div className="text-center mb-20 reveal">
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-gray-900 mb-6">
+            Dasturchilar uchun <br className="hidden md:block"/> maxsus yaratilgan
+          </h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Maqola yozish va o'qish jarayonini mukammal qilish uchun barcha kerakli vositalar.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[var(--tan-light)] border border-[var(--tan-light)]">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {[
-            { id: '01', icon: '✍️', title: 'Kuchli muharrir', desc: 'Markdown qo\'llab-quvvatlash, kod bloklari, syntax highlighting. Yozish jarayoni chiroyli va qulay.' },
-            { id: '02', icon: '🔖', title: 'Reading List', desc: 'Maqolalarni keyinroq o\'quvchi uchun saqalng. Shaxsiy kutubxonangizni yarating.', dark: true, iconBg: 'bg-[#e8440a]', iconColor: 'text-white' },
-            { id: '03', icon: '📊', title: 'Analytics Dashboard', desc: 'Maqolalaringizning ta\'sirini ko\'ring. O\'quvchilar soni, o\'qish vaqti, reaksiyalar.' },
-            { id: '04', icon: '🌐', title: 'Hamjamiyat', desc: 'O\'zbek va jahon developerlari bilan ulaning. Tajriba almashing, birga o\'sing.', dark: true, iconBg: 'bg-orange-500', iconColor: 'text-white', dot: true },
-            { id: '05', icon: '🔔', title: 'Smart Notifications', desc: 'Yangi maqolalar, izohlar, followerlar haqida darhol xabardor bo\'ling.' },
-            { id: '06', icon: '⚡', title: 'Tezkor qidiruv', desc: 'Kategoriya, muallif, kalit so\'z bo\'yicha filterlash. Kerakli maqolani bir zumda toping.' }
+            { icon: <PenTool className="w-6 h-6"/>, title: 'Professional Muharrir', desc: 'Markdown, kod bloklari va syntax highlighting bilan chalg\'ishlarsiz yozing.' },
+            { icon: <Bookmark className="w-6 h-6"/>, title: 'Saqlangan Maqolalar', desc: 'Muhim bilimlarni yo\'qotmang. O\'z shaxsiy kutubxonangizni shakllantiring.' },
+            { icon: <BarChart2 className="w-6 h-6"/>, title: 'Chuqur Analitika', desc: 'Maqolalaringiz qanchalik mashhur ekanligini real vaqt rejimida kuzatib boring.' },
+            { icon: <Globe className="w-6 h-6"/>, title: 'O\'zbek Hamjamiyati', desc: 'O\'zbek tilidagi eng katta developerlar jamoasi bilan bilim almashing.' },
+            { icon: <Bell className="w-6 h-6"/>, title: 'Bildirishnomalar', desc: 'Yangi maqolalar, izohlar va obunachilar haqida darhol xabardor bo\'ling.' },
+            { icon: <Search className="w-6 h-6"/>, title: 'Tezkor Qidiruv', desc: 'Minglab maqolalar orasidan kerakli yechimni soniyalar ichida toping.' }
           ].map((f, i) => (
-            <div key={i} className={`reveal p-10 md:p-14 group transition-colors duration-500 relative ${f.dark ? 'bg-[var(--ink2)] text-white' : 'bg-[var(--cream)]'}`}>
-              <div className={`text-[10px] font-sans font-black mb-10 tracking-[0.3em] ${f.dark ? 'text-white/20' : 'text-[var(--tan)]'}`}>
-                {f.id}
-              </div>
-              <div className={`w-14 h-14 flex items-center justify-center rounded-2xl text-2xl mb-10 shadow-sm transition-transform group-hover:scale-110 duration-300 ${f.iconBg || 'bg-[var(--orange-soft)]'} ${f.iconColor || ''}`}>
+            <div key={i} className="reveal p-8 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-300">
+              <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-gray-900 mb-6 border border-gray-100">
                 {f.icon}
               </div>
-              <h3 className={`font-serif text-2xl md:text-2xl font-black mb-5 leading-tight ${f.dark ? 'text-white' : 'text-[var(--ink)]'}`}>
-                {f.title}
-              </h3>
-              <p className={`text-sm md:text-base leading-relaxed ${f.dark ? 'text-white/50' : 'text-[#7a7068]'}`}>
-                {f.desc}
-              </p>
-              {f.dot && (
-                <div className="absolute bottom-12 right-12 w-3.5 h-3.5 rounded-full bg-[var(--orange)]" />
-              )}
+              <h3 className="text-xl font-bold text-gray-900 mb-3">{f.title}</h3>
+              <p className="text-gray-600 leading-relaxed">{f.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* FEATURED STORY */}
-      <section className="px-6 md:px-14 pb-24 md:pb-32 bg-[var(--cream)]">
-        <div className="reveal bg-[var(--ink)] rounded-[40px] overflow-hidden grid grid-cols-1 lg:grid-cols-2 min-h-[560px] shadow-3xl shadow-ink/40 relative">
-          <div className="p-10 md:p-20 flex flex-col justify-between items-start relative z-10">
-            <div className="w-full">
-              <div className="inline-block px-5 py-2 rounded-full border border-[var(--orange)]/30 text-[10px] font-black tracking-[0.3em] uppercase text-[var(--orange)] mb-12">
-                ✦ TAVSIYA ETILGAN MAQOLA
-              </div>
-              <h2 className="font-serif text-3xl md:text-[52px] font-black text-white leading-[1.05] tracking-tighter mb-10">
-                Biz tarixiy davrda yashayapmiz, lekin buni sezishga ulgurmayapmiz
-              </h2>
-              <div className="flex items-center gap-4 mb-12">
-                <p className="text-white/50 text-base md:text-lg leading-relaxed max-w-md font-medium">
-                  Hozir dunyoda hamma narsa haddan tashqari tez bo'layapti. Shunchalik tezki, inson o'ylab ulgurmayapti, his qilib ham ulgurmayapti...
-                </p>
-                <div className="w-2.5 h-2.5 rounded-full bg-[var(--orange)] flex-shrink-0" />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-6 w-full">
-              <div className="w-14 h-14 rounded-2xl bg-[var(--orange)] flex items-center justify-center font-black text-white text-xl shadow-xl shadow-orange-500/30">
-                B
-              </div>
-              <div>
-                <div className="text-white font-bold text-base">bunyodbek</div>
-                <div className="text-white/40 text-[11px] tracking-[0.1em] uppercase font-bold">27 Fevral · 3 min o'qish</div>
-              </div>
-              <button className="ml-auto w-20 h-20 rounded-full bg-[var(--orange)] text-white text-3xl flex items-center justify-center hover:scale-110 hover:-rotate-12 transition-all duration-500 shadow-2xl shadow-brand-orange/30">
-                ↗
-              </button>
-            </div>
-          </div>
-
-          <div className="hidden lg:flex relative bg-gradient-to-br from-[#1e1a15] to-[#2e261c] items-center justify-center overflow-hidden">
-            <div className="absolute inset-0 opacity-10 flex items-center justify-center pointer-events-none">
-              <div className="font-serif text-[420px] font-black italic text-white animate-letter-pulse" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.1)', color: 'transparent' }}>
-                D
-              </div>
-            </div>
-
-            <div className="relative w-full max-w-sm flex flex-col gap-5 p-10">
-              {[
-                { title: "Bugun havo ochiq", meta: "bunyodbek · Feb 10" },
-                { title: "JavaScript'da async/await", meta: "testuser · Feb 11", offset: true },
-                { title: "Salom, DevStories!", meta: "bunyodbek · Feb 17" }
-              ].map((card, i) => (
-                <div key={i} className={`bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-[24px] transition-all duration-500 hover:translate-x-6 cursor-default group/card ${card.offset ? 'ml-10' : ''}`}>
-                  <div className="text-white/80 font-bold mb-1.5 group-hover/card:text-white transition-colors">{card.title}</div>
-                  <div className="text-white/30 text-[9px] tracking-[0.2em] uppercase font-black group-hover/card:text-white/50 transition-colors">{card.meta}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="px-6 md:px-14 py-24 md:py-40 text-center relative overflow-hidden bg-[var(--cream)]">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_50%_50%,rgba(232,68,10,0.08),transparent)] pointer-events-none" />
-
-        <div className="relative z-10 max-w-5xl mx-auto flex flex-col items-center">
-          <div className="text-[10px] font-black tracking-[0.3em] uppercase text-[var(--orange)] mb-8">BUGUN BOSHLANG</div>
-          <h2 className="reveal font-serif text-[clamp(40px,7vw,90px)] font-black leading-[0.95] tracking-tighter mb-12">
-            Hikoyangizni<br />
-            <em className="italic text-[var(--orange)]">dunyo</em> bilan<br />
-            ulashing.
+      {/* CTA SECTION */}
+      <section className="py-24 md:py-32 bg-gray-900 text-white relative overflow-hidden">
+        {/* Subtle background pattern */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }}></div>
+        
+        <div className="relative z-10 max-w-4xl mx-auto px-6 text-center reveal">
+          <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-8">
+            Bilim ulashish vaqt-u sarhad tanlamaydi.
           </h2>
-          <p className="reveal text-lg md:text-xl text-[#7a7068] max-w-lg mb-16 leading-relaxed font-medium">
-            Bepul ro'yxatdan o'ting va o'z g'oyalaringizni minglab dasturchilar bilan baham ko'ring.
+          <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
+            O'z bilimingizni boshqalar bilan bo'lishish orqali, o'zingiz ham o'sasiz. Hozirgi kunda tajriba almashish har qachongidan muhimroq.
           </p>
-          <div className="reveal flex flex-col md:flex-row items-center gap-6">
-            <Link href="/register" className="inline-flex items-center gap-4 bg-[var(--ink)] text-[var(--cream)] px-12 py-5 rounded-full text-[13px] font-black tracking-[0.2em] uppercase hover:bg-[var(--orange)] hover:-translate-y-1 transition-all duration-300 shadow-3xl shadow-ink/40">
-              HOZIR QO'SHILING <span className="text-2xl">→</span>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link href="/register" className="w-full sm:w-auto bg-white text-gray-900 px-8 py-4 rounded-lg font-bold hover:bg-gray-100 transition-colors">
+              Ro'yxatdan o'tish
             </Link>
-            <Link href="/register" className="text-[10px] font-black tracking-[0.3em] uppercase border-b-2 border-[var(--tan)] hover:border-[var(--orange)] transition-colors pb-1">
-              MAQOLALARNI KO'RISH
+            <Link href="/feed" className="w-full sm:w-auto px-8 py-4 rounded-lg font-bold text-white border border-gray-700 hover:bg-gray-800 transition-colors">
+              Maqolalarni ko'rish
             </Link>
           </div>
         </div>
       </section>
 
       {/* FOOTER */}
-      <footer className="px-6 md:px-14 py-16 flex flex-col md:flex-row items-center justify-between gap-12 border-t border-[var(--tan-light)] bg-[var(--cream)]">
-        <Link href="/" className="text-2xl font-serif font-black tracking-tighter text-[var(--ink)]">
-          <span className="text-[var(--orange)] italic">Dev</span>Stories
-        </Link>
-        <div className="text-[11px] font-black text-[var(--tan)] uppercase tracking-[0.2em]">
-          © 2026 DevStories. BARCHA HUQUQLAR HIMOAYLANGAN.
+      <footer className="border-t border-gray-100 bg-white pt-16 pb-8 px-6 md:px-14">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 mb-12">
+          <Link href="/" className="text-2xl font-serif font-bold tracking-tight text-gray-900">
+            <span className="text-orange-600">Dev</span>Stories
+          </Link>
+          <div className="flex gap-8">
+            {['Haqimizda', 'Qoidalar', 'Maxfiylik', 'Aloqa'].map((link, i) => (
+              <a key={i} href="#" className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
+                {link}
+              </a>
+            ))}
+          </div>
         </div>
-        <div className="flex gap-10">
-          {['Haqimizda', 'Blog', 'Maxfiylik', 'Aloqa'].map((link, i) => (
-            <a key={i} href="#" className="text-[11px] font-black tracking-[0.2em] text-[#7a7068] uppercase hover:text-[var(--orange)] transition-colors">
-              {link}
-            </a>
-          ))}
+        <div className="max-w-7xl mx-auto text-center text-sm text-gray-400">
+          © {new Date().getFullYear()} DevStories. Barcha huquqlar himoyalangan.
         </div>
       </footer>
     </div>
