@@ -22,7 +22,14 @@ interface MainLayoutProps {
 export const MainLayout: React.FC<MainLayoutProps> = ({ children, currentUser }) => {
     const router = useRouter();
     const pathname = usePathname();
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const stored = localStorage.getItem('sidebarOpen');
+            if (stored !== null) return stored === 'true';
+            return window.innerWidth >= 1024;
+        }
+        return true;
+    });
     const { theme } = useTheme();
 
     useEffect(() => {
@@ -31,6 +38,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children, currentUser })
             setIsSidebarOpen(false);
         }
     }, []);
+
+    const toggleSidebar = () => {
+        const newState = !isSidebarOpen;
+        setIsSidebarOpen(newState);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('sidebarOpen', String(newState));
+        }
+    };
 
     const isPostPage = pathname?.startsWith('/posts/');
 
@@ -53,17 +68,19 @@ export const MainLayout: React.FC<MainLayoutProps> = ({ children, currentUser })
             </div>
 
             <TopHeader
-                onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                onMenuClick={toggleSidebar}
                 currentUser={currentUser}
+                onLogout={handleLogout}
             />
 
             {/* Layout Wrapper */}
             <div className="flex pt-16 min-h-screen relative z-10 w-full">
                 {/* Column 1: Persistent Desktop Sidebar */}
-                <aside className={`hidden lg:block sticky top-16 h-[calc(100vh-64px)] overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-[280px] opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}>
+                <aside className={`hidden lg:block sticky top-16 h-[calc(100vh-64px)] transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-[280px] opacity-100 overflow-y-auto' : 'w-[80px] opacity-100'}`}>
                     <Sidebar
                         currentUser={currentUser}
                         onLogout={handleLogout}
+                        isCollapsed={!isSidebarOpen}
                         className="w-full h-full border-r border-gray-100 dark:border-[#2a2a2a]"
                     />
                 </aside>

@@ -9,15 +9,17 @@ import { Avatar } from '../ui/Avatar';
 interface TopHeaderProps {
     onMenuClick: () => void;
     currentUser: any;
+    onLogout: () => void;
 }
 
-export const TopHeader: React.FC<TopHeaderProps> = ({ onMenuClick, currentUser }) => {
+export const TopHeader: React.FC<TopHeaderProps> = ({ onMenuClick, currentUser, onLogout }) => {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { theme, toggleTheme } = useTheme();
     const searchInputRef = React.useRef<HTMLInputElement>(null);
     const [isSearchExpanded, setIsSearchExpanded] = React.useState(searchParams.has('search') || searchParams.get('focus') === 'search');
     const [searchValue, setSearchValue] = React.useState(searchParams.get('search') || '');
+    const [isProfileMenuOpen, setIsProfileMenuOpen] = React.useState(false);
 
     const currentSearch = searchParams.get('search') || '';
     const focusSearch = searchParams.get('focus') === 'search';
@@ -194,15 +196,51 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onMenuClick, currentUser }
                 </button>
 
                 {currentUser && (
-                    <Link href="/profile" className="flex items-center gap-2 group">
-                        <Avatar
-                            src={currentUser.avatar}
-                            fallback={currentUser.userName?.[0] || 'U'}
-                            alt={currentUser.userName || 'User'}
-                            size="sm"
-                            className="ring-2 ring-transparent group-hover:ring-brand-orange/30 transition-all border border-gray-100 dark:border-[#333]"
-                        />
-                    </Link>
+                    <div className="relative">
+                        <button
+                            onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                            className="flex items-center gap-2 group focus:outline-none"
+                        >
+                            <Avatar
+                                src={currentUser.avatar}
+                                fallback={currentUser.userName?.[0] || 'U'}
+                                alt={currentUser.userName || 'User'}
+                                size="sm"
+                                className="ring-2 ring-transparent group-hover:ring-brand-orange/30 transition-all border border-gray-100 dark:border-[#333]"
+                            />
+                        </button>
+                        
+                        {isProfileMenuOpen && (
+                            <>
+                                <div 
+                                    className="fixed inset-0 z-40" 
+                                    onClick={() => setIsProfileMenuOpen(false)}
+                                ></div>
+                                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#1f1f1f] rounded-xl shadow-lg border border-gray-100 dark:border-[#2a2a2a] py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="px-4 py-2 border-b border-gray-100 dark:border-[#2a2a2a] mb-1">
+                                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{currentUser.userName}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{currentUser.email}</p>
+                                    </div>
+                                    <Link 
+                                        href="/profile" 
+                                        onClick={() => setIsProfileMenuOpen(false)}
+                                        className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                                    >
+                                        Profile
+                                    </Link>
+                                    <button 
+                                        onClick={() => {
+                                            setIsProfileMenuOpen(false);
+                                            onLogout();
+                                        }}
+                                        className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                    >
+                                        Sign out
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 )}
             </div>
         </header>

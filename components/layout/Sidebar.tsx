@@ -75,31 +75,37 @@ export const Sidebar: React.FC<SidebarProps & { className?: string; isMobile?: b
 
     return (
         <aside className={`${className} bg-white dark:bg-[#0f0f0f] border-r border-gray-100 dark:border-[#2a2a2a] transition-all duration-300`}>
-            <div className="flex flex-col h-full p-4 lg:p-6">
+            <div className={`flex flex-col h-full py-4 ${isCollapsed ? 'px-2 items-center' : 'p-4 lg:p-6'}`}>
                 {/* Navigation */}
-                <nav className="flex-1 space-y-2 mt-4">
+                <nav className="flex-1 space-y-2 mt-4 w-full">
                     {navItems.map((item) => {
                         const isActive = pathname === item.href;
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group ${isActive
+                                className={`flex items-center gap-4 py-3 rounded-xl transition-all duration-200 group relative ${
+                                    isCollapsed ? 'justify-center px-0' : 'px-4'
+                                } ${isActive
                                     ? 'bg-gray-50 dark:bg-white/5 text-[#292929] dark:text-white font-semibold shadow-sm'
                                     : 'text-[#757575] dark:text-[#999999] hover:bg-gray-50 dark:hover:bg-white/5 hover:text-[#292929] dark:hover:text-white'
                                     }`}
-                                title={item.label}
                             >
-                                <span className={`transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>{item.icon}</span>
-                                <span className="text-[15px] tracking-tight">{item.label}</span>
+                                <span className={`transition-transform duration-200 flex-shrink-0 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>{item.icon}</span>
+                                {!isCollapsed ? (
+                                    <span className="text-[15px] tracking-tight whitespace-nowrap">{item.label}</span>
+                                ) : (
+                                    <span className="absolute left-14 bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-semibold text-xs px-2 py-1.5 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-md">
+                                        {item.label}
+                                    </span>
+                                )}
                             </Link>
                         );
                     })}
 
                     <Link
                         href="/create-post"
-                        className="flex items-center justify-center gap-2.5 px-6 py-3 rounded-full bg-brand-orange hover:bg-brand-orange/90 text-white mt-10 transition-all duration-300 group shadow-lg shadow-brand-orange/20 hover:scale-[1.02] active:scale-[0.98]"
-                        title="Write"
+                        className={`flex items-center justify-center gap-2.5 py-3 rounded-full bg-brand-orange hover:bg-brand-orange/90 text-white mt-10 transition-all duration-300 group relative shadow-lg shadow-brand-orange/20 hover:scale-[1.02] active:scale-[0.98] ${isCollapsed ? 'px-0 w-12 h-12 mx-auto rounded-xl' : 'px-6'}`}
                     >
                         <span className="text-xl">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-label="Write">
@@ -107,28 +113,37 @@ export const Sidebar: React.FC<SidebarProps & { className?: string; isMobile?: b
                                 <path d="M17.5 4.5l-8.46 8.46a.25.25 0 0 0-.06.1l-.6 2.1c-.07.25.17.49.42.42l2.1-.6a.25.25 0 0 0 .1-.06l8.46-8.46a1.5 1.5 0 0 0-2.1-2.1l-.06.1z" stroke="currentColor" strokeLinecap="round"></path>
                             </svg>
                         </span>
-                        <span className="text-[15px] font-bold">Write</span>
+                        {!isCollapsed ? (
+                            <span className="text-[15px] font-bold">Write</span>
+                        ) : (
+                            <span className="absolute left-14 bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-semibold text-xs px-2 py-1.5 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-md">
+                                Write
+                            </span>
+                        )}
                     </Link>
                 </nav>
 
-                {/* User Profile & Logout */}
-                <div className="mt-auto pt-6 border-t border-gray-100 dark:border-[#2a2a2a] pb-4">
-                    <div className="flex items-center gap-3 px-2">
-                        <Avatar
-                            src={currentUser?.avatar}
-                            fallback={currentUser?.userName || '?'}
-                            alt={currentUser?.userName || 'User'}
-                            size="sm"
-                        />
-                        <div className="overflow-hidden flex-1">
-                            <p className="font-bold text-sm truncate dark:text-[#e0e0e0] leading-tight">{currentUser?.userName}</p>
-                            <button
-                                onClick={onLogout}
-                                className="text-xs text-[#757575] hover:text-[#292929] dark:text-[#999999] dark:hover:text-white transition"
-                            >
-                                Sign out
-                            </button>
+                {/* User Profile */}
+                <div className={`mt-auto pt-6 border-t border-gray-100 dark:border-[#2a2a2a] pb-4 w-full flex ${isCollapsed ? 'justify-center' : ''}`}>
+                    <div className={`flex items-center gap-3 ${isCollapsed ? 'px-0' : 'px-2'}`}>
+                        <div className="relative group flex items-center justify-center">
+                            <Avatar
+                                src={currentUser?.avatar}
+                                fallback={currentUser?.userName || '?'}
+                                alt={currentUser?.userName || 'User'}
+                                size="sm"
+                            />
+                            {isCollapsed && (
+                                <span className="absolute left-12 bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-semibold text-xs px-2 py-1.5 rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 pointer-events-none shadow-md">
+                                    {currentUser?.userName}
+                                </span>
+                            )}
                         </div>
+                        {!isCollapsed && (
+                            <div className="overflow-hidden flex-1 flex items-center h-8">
+                                <p className="font-bold text-base tracking-tight truncate dark:text-[#e0e0e0] leading-tight w-full">{currentUser?.userName}</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

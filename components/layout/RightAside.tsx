@@ -124,7 +124,7 @@ export const RightAside: React.FC = () => {
                 <Link href="#" className="hover:text-gray-900 dark:hover:text-white transition-colors">Privacy</Link>
                 <Link href="#" className="hover:text-gray-900 dark:hover:text-white transition-colors">Terms</Link>
                 <Link href="#" className="hover:text-gray-900 dark:hover:text-white transition-colors">About</Link>
-                <p className="w-full mt-2">© 2024 DevStories Platform</p>
+                <p className="w-full mt-2">© {new Date().getFullYear()} DevStories Platform</p>
             </footer>
         </aside>
     );
