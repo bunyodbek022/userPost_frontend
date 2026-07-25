@@ -7,6 +7,7 @@ import api from '../../services/api';
 import { AuthLayout } from '../../components/layout/AuthLayout';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { GoogleLogin } from '@react-oauth/google';
 
 export default function Login() {
   const [formData, setFormData] = useState({ login: '', password: '' });
@@ -50,6 +51,21 @@ export default function Login() {
         const errorMessage = err.response?.data?.message || "Login failed";
         toast.error(errorMessage);
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async (credentialResponse: any) => {
+    setLoading(true);
+    try {
+      const response = await api.post('/auth/google', { token: credentialResponse.credential });
+      if (response.data.success) {
+        toast.success("Welcome back!");
+        router.push('/feed');
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Google login failed");
     } finally {
       setLoading(false);
     }
@@ -166,6 +182,23 @@ export default function Login() {
           >
             Kirish <span className="ml-2">→</span>
           </Button>
+
+          <div className="relative flex py-2 items-center">
+            <div className="flex-grow border-t border-gray-200 dark:border-gray-800"></div>
+            <span className="flex-shrink-0 mx-4 text-gray-400 text-xs font-medium uppercase">yoki</span>
+            <div className="flex-grow border-t border-gray-200 dark:border-gray-800"></div>
+          </div>
+
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleLogin}
+              onError={() => toast.error("Google orqali ulanishda xatolik yuz berdi")}
+              shape="rectangular"
+              size="large"
+              width="100%"
+              text="continue_with"
+            />
+          </div>
 
           <p className="text-center text-sm text-gray-500 dark:text-slate-400 mt-8">
             Hisob yo'qmi?

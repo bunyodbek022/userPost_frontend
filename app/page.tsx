@@ -187,7 +187,7 @@ export default function Home() {
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px' }}></div>
         
         <div className="relative z-10 max-w-4xl mx-auto px-6 text-center reveal">
-          <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-8">
+          <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-8 text-white">
             Bilim ulashish vaqt-u sarhad tanlamaydi.
           </h2>
           <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
