@@ -19,6 +19,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script_stop: true
+          command_timeout: 30m
           script: |
             # 1. Frontend kodini yangilaymiz
             cd /var/www/devStories/frontend

@@ -7,7 +7,7 @@ RUN npm install -g pnpm
 FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm install --frozen-lockfile --ignore-scripts
+RUN pnpm config set registry https://registry.npmmirror.com/ && pnpm install --frozen-lockfile --ignore-scripts --fetch-timeout 600000 --fetch-retries 5
 
 # 3. Build
 FROM base AS builder
