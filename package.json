@@ -34,5 +34,12 @@
     "postcss": "^8.5.6",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "sharp",
+      "unrs-resolver"
+    ]
   }
 }
