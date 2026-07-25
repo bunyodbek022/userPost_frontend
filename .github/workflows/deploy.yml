@@ -26,8 +26,10 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             
-            # 2. Backend papkasiga (docker-compose joylashgan yerga) o'tamiz
+            # 2. Backend papkasiga (docker-compose joylashgan yerga) o'tamiz va uni ham yangilaymiz
             cd /var/www/devStories/backend
+            git fetch origin main
+            git reset --hard origin/main
             
             echo "Rebuilding Frontend container..."
             # Faqat frontendni build qilamiz
