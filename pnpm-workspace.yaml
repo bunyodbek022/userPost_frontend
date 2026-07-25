@@ -1,6 +1,6 @@
 packages:
   - .
-ignoredBuiltDependencies:
-  - '@parcel/watcher'
-  - sharp
-  - unrs-resolver
+allowBuilds:
+  '@parcel/watcher': true
+  sharp: true
+  unrs-resolver: true
