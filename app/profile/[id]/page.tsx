@@ -149,72 +149,115 @@ export default function UserProfileView() {
     <MainLayout currentUser={currentUser}>
       <div className="max-w-2xl mx-auto px-4 pb-16">
 
-        {/* ── Instagram-style Header ── */}
-        <div className="flex flex-col items-center pt-10 pb-6">
-          {/* Avatar */}
-          <div className="mb-4">
-            <Avatar
-              src={targetUser?.avatar}
-              fallback={targetUser?.userName || '?'}
-              alt={targetUser?.userName}
-              size="xl"
-              className="w-24 h-24 text-4xl ring-2 ring-gray-200 dark:ring-[#333] ring-offset-2 ring-offset-white dark:ring-offset-[#121212]"
-            />
+        {/* ── Modern Profile Header with Banner ── */}
+        <div className="mb-10">
+          {/* Banner */}
+          <div 
+            className="h-40 sm:h-48 w-full rounded-2xl mt-4 relative overflow-hidden border border-gray-50 dark:border-white/5 bg-gradient-to-tr from-brand-orange/10 via-orange-200/40 to-brand-orange/5 dark:from-brand-orange/10 dark:via-[#1e1e1e] dark:to-[#121212] bg-cover bg-center"
+            style={targetUser?.coverImage ? { 
+              backgroundImage: `url(${targetUser.coverImage.startsWith('/uploads') 
+                ? ((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api').replace(/\/api$/, '') + targetUser.coverImage) 
+                : targetUser.coverImage})` 
+            } : {}}
+          >
           </div>
-
-          {/* Username */}
-          <h1 className="text-2xl font-bold font-sans dark:text-[#e0e0e0] mb-1">
-            {targetUser?.userName}
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-[#888] mb-4">
-            {targetUser?.role === 'admin' ? '🛡 Admin' : 'Writer'}
-          </p>
-
-          {/* Stats Row */}
-          <div className="flex items-center gap-8 mb-5">
-            <div className="text-center">
-              <p className="text-lg font-bold dark:text-[#e0e0e0]">{posts.length}</p>
-              <p className="text-xs text-gray-500 dark:text-[#888] uppercase tracking-wide">Stories</p>
+          
+          {/* Profile Info */}
+          <div className="px-4 sm:px-8 flex flex-col relative z-10 -mt-16">
+            <div className="flex items-start mb-3 w-full">
+              <Avatar
+                src={targetUser?.avatar}
+                fallback={targetUser?.userName || '?'}
+                alt={targetUser?.userName}
+                size="xl"
+                className="w-32 h-32 text-5xl ring-4 ring-white dark:ring-[#0B1120] bg-white dark:bg-[#0B1120] shrink-0"
+              />
+              
+              <div className="flex-1 flex justify-center pt-[85px]">
+                <div className="hidden sm:flex items-center gap-10 text-gray-600 dark:text-gray-400">
+                  <div className="flex flex-col items-center">
+                    <span className="text-black dark:text-white font-bold text-2xl">{posts.length}</span>
+                    <span className="text-[14px] font-medium">Stories</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="text-black dark:text-white font-bold text-2xl">{following.length}</span>
+                    <span className="text-[14px] font-medium">Subscriptions</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="text-black dark:text-white font-bold text-2xl">{followers.length}</span>
+                    <span className="text-[14px] font-medium">Followers</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="pt-[85px] shrink-0">
+                <FollowButton
+                  targetUserId={String(targetUser._id)}
+                  currentUser={currentUser}
+                  size="md"
+                  onToggle={refreshLists}
+                />
+              </div>
             </div>
-            <div className="w-px h-8 bg-gray-200 dark:bg-[#333]" />
-            <div className="text-center">
-              <p className="text-lg font-bold dark:text-[#e0e0e0]">{following.length}</p>
-              <p className="text-xs text-gray-500 dark:text-[#888] uppercase tracking-wide">Subscriptions</p>
+
+            {/* Mobile Stats (visible only on small screens) */}
+            <div className="flex sm:hidden items-center gap-6 text-gray-600 dark:text-gray-400 mb-4 mt-2">
+              <div className="flex flex-col">
+                <span className="text-black dark:text-white font-bold text-lg">{posts.length}</span>
+                <span className="text-xs font-medium">Stories</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-black dark:text-white font-bold text-lg">{following.length}</span>
+                <span className="text-xs font-medium">Subscriptions</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-black dark:text-white font-bold text-lg">{followers.length}</span>
+                <span className="text-xs font-medium">Followers</span>
+              </div>
             </div>
-            <div className="w-px h-8 bg-gray-200 dark:bg-[#333]" />
-            <div className="text-center">
-              <p className="text-lg font-bold dark:text-[#e0e0e0]">{followers.length}</p>
-              <p className="text-xs text-gray-500 dark:text-[#888] uppercase tracking-wide">Followers</p>
+
+            <div className="flex flex-col">
+              <h1 className="text-3xl font-bold font-sans dark:text-white mb-1">
+                {targetUser?.userName}
+              </h1>
+              <p className="text-[15px] text-gray-500 dark:text-gray-400 mb-2">
+                {targetUser?.role === 'admin' ? 'Staff Admin' : 'Writer'}
+                {targetUser?.profession && (
+                  <>
+                    <span className="mx-2">&bull;</span>
+                    {targetUser.profession.name}
+                  </>
+                )}
+              </p>
+
+              {targetUser?.techStacks?.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {targetUser.techStacks.map((ts: any) => (
+                    <span key={ts._id} className="px-2.5 py-0.5 bg-gray-100 dark:bg-[#1E293B] text-gray-600 dark:text-gray-300 rounded-full text-xs font-medium">
+                      {ts.name}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-
-          {/* Follow / Unfollow Button */}
-          <FollowButton
-            targetUserId={String(targetUser._id)}
-            currentUser={currentUser}
-            size="md"
-            onToggle={refreshLists}
-          />
         </div>
 
         {/* ── Tabs ── */}
-        <div className="border-b border-gray-200 dark:border-[#333] mb-6">
-          <div className="flex">
+        <div className="border-b border-gray-100 dark:border-[#2a2a2a] mb-8">
+          <div className="flex gap-8 px-2 sm:px-8">
             {tabs.map(tab => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex-1 py-3 text-sm font-medium transition-colors relative ${activeTab === tab.key
+                className={`pb-4 text-[15px] font-medium transition-colors relative ${activeTab === tab.key
                   ? 'text-black dark:text-white'
-                  : 'text-gray-400 dark:text-[#666] hover:text-gray-700 dark:hover:text-[#aaa]'
+                  : 'text-gray-500 dark:text-[#888] hover:text-gray-800 dark:hover:text-[#aaa]'
                   }`}
               >
-                {tab.label}
-                {tab.count > 0 && (
-                  <span className="ml-1.5 text-xs text-gray-400 dark:text-[#666]">({tab.count})</span>
-                )}
+                {tab.label} {tab.count > 0 && <span className="ml-1 opacity-60">({tab.count})</span>}
                 {activeTab === tab.key && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-black dark:bg-white rounded-full" />
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-orange rounded-t-full" />
                 )}
               </button>
             ))}
@@ -237,7 +280,7 @@ export default function UserProfileView() {
                 onDelete={handleDeletePost}
               />
             )) : (
-              <div className="py-20 text-center bg-gray-50 dark:bg-[#1f1f1f] rounded-xl">
+              <div className="py-20 text-center bg-gray-50 dark:bg-[#1E293B] rounded-xl">
                 <p className="text-gray-500 dark:text-[#999]">No stories yet.</p>
               </div>
             )}
@@ -253,7 +296,7 @@ export default function UserProfileView() {
                   <Link
                     key={user._id}
                     href={`/profile/${user._id}`}
-                    className="flex items-center gap-3 p-4 bg-white dark:bg-[#1f1f1f] border border-gray-100 dark:border-[#333] rounded-xl hover:border-gray-300 dark:hover:border-[#555] transition-all"
+                    className="flex items-center gap-3 p-4 bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-[#333] rounded-xl hover:border-gray-300 dark:hover:border-[#555] transition-all"
                   >
                     <Avatar
                       src={user.avatar}
@@ -272,7 +315,7 @@ export default function UserProfileView() {
                 ))}
               </div>
             ) : (
-              <div className="py-20 text-center bg-gray-50 dark:bg-[#1f1f1f] rounded-xl">
+              <div className="py-20 text-center bg-gray-50 dark:bg-[#1E293B] rounded-xl">
                 <p className="text-gray-500 dark:text-[#999]">
                   {targetUser.userName} hasn't subscribed to anyone yet.
                 </p>
@@ -289,7 +332,7 @@ export default function UserProfileView() {
                 {followers.map((user: any) => (
                   <div
                     key={user._id}
-                    className="flex items-center justify-between p-4 bg-white dark:bg-[#1f1f1f] border border-gray-100 dark:border-[#333] rounded-xl hover:border-gray-300 dark:hover:border-[#555] transition-all"
+                    className="flex items-center justify-between p-4 bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-[#333] rounded-xl hover:border-gray-300 dark:hover:border-[#555] transition-all"
                   >
                     <Link href={`/profile/${user._id}`} className="flex items-center gap-3 min-w-0">
                       <Avatar
@@ -317,7 +360,7 @@ export default function UserProfileView() {
                 ))}
               </div>
             ) : (
-              <div className="py-20 text-center bg-gray-50 dark:bg-[#1f1f1f] rounded-xl">
+              <div className="py-20 text-center bg-gray-50 dark:bg-[#1E293B] rounded-xl">
                 <p className="text-gray-500 dark:text-[#999]">
                   {targetUser.userName} has no followers yet.
                 </p>

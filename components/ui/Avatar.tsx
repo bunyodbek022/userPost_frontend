@@ -22,8 +22,8 @@ export const Avatar: React.FC<AvatarProps> = ({
         xl: "w-20 h-20 text-xl",
     };
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
-    const backendUrl = apiUrl.replace(/\/api$/, '');
+    const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    const backendUrl = rawApiUrl.startsWith('http') ? rawApiUrl.replace(/\/api$/, '') : '';
 
     const fullSrc = src?.startsWith('/uploads') ? `${backendUrl}${src}` : src;
 

@@ -12,7 +12,7 @@ import { GoogleLogin } from '@react-oauth/google';
 export default function Register() {
   const [formData, setFormData] = useState({
     userName: '',
-    age: '',
+    birthDate: '',
     email: '',
     password: ''
   });
@@ -61,10 +61,12 @@ export default function Register() {
     setLoading(true);
     setErrors({});
 
-    const dataToSend = {
-      ...formData,
-      age: Number(formData.age)
+    const dataToSend: any = {
+      ...formData
     };
+    if (formData.birthDate) {
+      dataToSend.birthDate = new Date(formData.birthDate);
+    }
 
     try {
       await api.post('/auth/register', dataToSend);
@@ -165,17 +167,15 @@ export default function Register() {
 
           <div className="space-y-1">
             <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 ml-1">
-              AGE
+              BIRTH DATE (OPTIONAL)
             </label>
             <Input
-              name="age"
-              type="number"
-              value={formData.age}
+              name="birthDate"
+              type="date"
+              value={formData.birthDate}
               onChange={handleChange}
-              placeholder="yoshingiz"
-              error={errors.age}
+              error={errors.birthDate}
               className="!rounded-xl border-slate-200 dark:border-slate-800 focus:border-orange-500 dark:focus:border-orange-500 transition-colors"
-              required
             />
           </div>
 

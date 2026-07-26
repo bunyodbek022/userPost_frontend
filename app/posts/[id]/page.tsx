@@ -9,7 +9,8 @@ import { Spinner } from '../../../components/ui/Spinner';
 import { EditPostModal } from '../../../components/features/EditPostModal';
 import { Button } from '../../../components/ui/Button';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || '';
+const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const BACKEND_URL = RAW_API_URL.startsWith('http') ? RAW_API_URL.replace(/\/api$/, '') : '';
 
 export default function PostDetail() {
   const { id } = useParams();
@@ -332,7 +333,7 @@ export default function PostDetail() {
                 </svg>
               </button>
               {shareOpen && (
-                <div className="absolute right-0 bottom-full mb-2 bg-white dark:bg-[#1f1f1f] border border-gray-100 dark:border-[#333] rounded-xl shadow-2xl p-2 min-w-[180px] z-[100] animate-in fade-in slide-in-from-bottom-2 duration-200">
+                <div className="absolute right-0 bottom-full mb-2 bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-[#333] rounded-xl shadow-2xl p-2 min-w-[180px] z-[100] animate-in fade-in slide-in-from-bottom-2 duration-200">
                   {[{ p: 'x', label: 'Share on X', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg> }, { p: 'telegram', label: 'Telegram', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg> }, { p: 'whatsapp', label: 'WhatsApp', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l2.28-2.28a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg> }].map(s => (
                     <button key={s.p} onClick={() => { const url = window.location.href; const text = `Check out this story: ${post.title}`; let su = ''; if (s.p === 'x') su = `https://x.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`; if (s.p === 'telegram') su = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`; if (s.p === 'whatsapp') su = `https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + url)}`; if (su) window.open(su, '_blank'); setShareOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg transition-colors font-sans">
                       {s.icon}{s.label}
@@ -363,7 +364,7 @@ export default function PostDetail() {
 
         {/* 4. Cover Image */}
         {post.coverImage && (
-          <div className="mb-10 rounded-sm overflow-hidden bg-gray-50 dark:bg-[#1f1f1f]">
+          <div className="mb-10 rounded-sm overflow-hidden bg-gray-50 dark:bg-[#1E293B]">
             <img
               src={post.coverImage.startsWith('http') ? post.coverImage : `${BACKEND_URL}${post.coverImage}`}
               alt={post.title}
@@ -373,12 +374,10 @@ export default function PostDetail() {
         )}
 
         {/* 5. Content */}
-        <div className="prose prose-lg dark:prose-invert max-w-none font-serif leading-[1.6] text-[#292929] dark:text-[#d1d1d1] mb-20 text-[20px]">
-          <div
-            className="rich-content"
-            dangerouslySetInnerHTML={{ __html: post.content }}
-          />
-        </div>
+        <div 
+          className="rich-content max-w-none mt-8 mb-16 font-serif leading-relaxed text-[17px] sm:text-[18px]"
+          dangerouslySetInnerHTML={{ __html: post.content }}
+        />
 
         {/* 6. Comments Section */}
         <div id="comments" className="mt-12 pt-12 border-t border-gray-100 dark:border-[#2a2a2a]">
@@ -408,7 +407,7 @@ export default function PostDetail() {
                     <button
                       onClick={handleSubmitComment}
                       disabled={!commentText.trim() || commentLoading}
-                      className="px-6 py-2 bg-[#1a1a1a] dark:bg-white dark:text-black text-white text-[14px] font-bold rounded-full hover:opacity-90 transition-all disabled:opacity-50"
+                      className="px-6 py-2 bg-[#1E293B] dark:bg-white dark:text-black text-white text-[14px] font-bold rounded-full hover:opacity-90 transition-all disabled:opacity-50"
                     >
                       {commentLoading ? 'Sending...' : 'Respond'}
                     </button>

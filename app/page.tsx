@@ -80,22 +80,18 @@ export default function Home() {
             Yangi platforma
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-gray-900 leading-[1.1] mb-6 opacity-0 animate-fade-up [animation-delay:0.1s]">
-            Dasturlash haqida <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-500">
-              jiddiy suhbatlar.
-            </span>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-black text-gray-900 tracking-tight leading-[1.1] mb-6 opacity-0 animate-fade-up [animation-delay:0.1s]">
+            Dasturchilar<br />uchun xos <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-orange to-[#ff8c42]">jamiyat</span>
           </h1>
-          
-          <p className="text-lg text-gray-600 mb-10 max-w-lg leading-relaxed opacity-0 animate-fade-up [animation-delay:0.2s]">
+          <p className="text-base sm:text-lg text-gray-600 mb-10 max-w-lg mx-auto md:mx-0 leading-relaxed opacity-0 animate-fade-up [animation-delay:0.2s]">
             O'zbek tilidagi eng yirik developerlar hamjamiyatiga qo'shiling. Tajribangizni ulashing, bilim oling va o'z portfoliongizni yarating.
           </p>
           
-          <div className="flex items-center gap-4 opacity-0 animate-fade-up [animation-delay:0.3s]">
-            <Link href="/register" className="inline-flex items-center gap-2 bg-gray-900 text-white px-8 py-3.5 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5 duration-200">
+          <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4 opacity-0 animate-fade-up [animation-delay:0.3s]">
+            <Link href="/register" className="w-full sm:w-auto justify-center inline-flex items-center gap-2 bg-gray-900 text-white px-8 py-3.5 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-all shadow-md hover:shadow-xl hover:-translate-y-0.5 duration-200">
               Yozishni boshlash <ArrowRight className="w-4 h-4" />
             </Link>
-            <Link href="/feed" className="inline-flex items-center px-8 py-3.5 text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors">
+            <Link href="/feed" className="w-full sm:w-auto justify-center inline-flex items-center px-8 py-3.5 text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors">
               Maqolalarni o'qish
             </Link>
           </div>

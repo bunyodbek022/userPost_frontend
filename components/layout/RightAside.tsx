@@ -14,7 +14,7 @@ export const RightAside: React.FC = () => {
 
     if (postsLoading || catsLoading) {
         return (
-            <aside className="hidden xl:block w-[350px] sticky top-20 self-start p-6">
+            <aside className="hidden xl:block w-[350px] sticky top-16 h-[calc(100vh-64px)] overflow-y-auto bg-[#F9FAFB] dark:bg-[#0F172A] border-l border-gray-100 dark:border-[#2a2a2a] p-6 space-y-10">
                 <div className="flex justify-center py-20">
                     <Spinner size="sm" />
                 </div>
@@ -23,7 +23,7 @@ export const RightAside: React.FC = () => {
     }
 
     return (
-        <aside className="hidden xl:block w-[350px] sticky top-20 self-start p-6 space-y-10">
+        <aside className="hidden xl:block w-[350px] sticky top-16 h-[calc(100vh-64px)] overflow-y-auto bg-[#F9FAFB] dark:bg-[#0F172A] border-l border-gray-100 dark:border-[#2a2a2a] p-6 space-y-10">
             {/* Staff Picks (Popular Posts) */}
             <section>
                 <h3 className="font-bold text-[#292929] dark:text-white mb-4">Staff Picks</h3>
@@ -59,7 +59,7 @@ export const RightAside: React.FC = () => {
                             <Link
                                 key={topic._id}
                                 href={`/feed?category=${topic.name}`}
-                                className="px-4 py-2 bg-gray-100 dark:bg-[#1f1f1f] hover:bg-gray-200 dark:hover:bg-[#2a2a2a] text-xs text-[#292929] dark:text-[#e0e0e0] rounded-full transition-colors font-sans"
+                                className="px-4 py-2 bg-gray-100 dark:bg-[#1E293B] hover:bg-gray-200 dark:hover:bg-[#334155] text-xs text-[#292929] dark:text-[#e0e0e0] rounded-full transition-colors font-sans"
                             >
                                 {topic.name}
                             </Link>

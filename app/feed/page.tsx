@@ -144,7 +144,7 @@ function FeedContent() {
             ))}
           </div>
         ) : posts.length === 0 ? (
-          <div className="text-center py-20 bg-gray-50 dark:bg-[#1f1f1f] rounded-lg mt-8">
+          <div className="text-center py-20 bg-gray-50 dark:bg-[#1E293B] rounded-lg mt-8">
             <p className="text-gray-500 dark:text-[#999999] mb-4">No stories found.</p>
             <Link href="/create-post" className="text-black dark:text-white font-medium underline">
               Write the first story

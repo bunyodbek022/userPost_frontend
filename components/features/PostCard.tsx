@@ -4,7 +4,9 @@ import { toast } from 'react-hot-toast';
 import { Avatar } from '../ui/Avatar';
 import { FollowButton } from '../ui/FollowButton';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || '';
+// If API URL is relative (e.g. "/api"), uploads go through Next.js proxy rewrite too, so BACKEND_URL stays empty
+const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const BACKEND_URL = RAW_API_URL.startsWith('http') ? RAW_API_URL.replace(/\/api$/, '') : '';
 
 interface PostCardProps {
     post: any;
@@ -159,7 +161,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, currentUser, onLike, o
     if (dismissed) return null;
 
     return (
-        <article className="border-b border-gray-100 dark:border-[#2a2a2a] py-8 last:border-0 transition-opacity hover:opacity-95">
+        <article className="border-b border-gray-200 dark:border-[#2a2a2a] py-8 last:border-0 transition-opacity hover:opacity-95">
             {post.repostedBy && (
                 <div className="flex items-center gap-2 mb-3 px-1 text-gray-500 dark:text-gray-400">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -213,7 +215,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, currentUser, onLike, o
                                 <div className="relative">
                                     <button
                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuOpen(!menuOpen); }}
-                                        className="text-gray-400 hover:text-gray-900 dark:hover:text-white p-1 transition-colors"
+                                        className="text-gray-500 hover:text-gray-900 dark:hover:text-white p-1 transition-colors"
                                         title="More"
                                     >
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -221,7 +223,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, currentUser, onLike, o
                                         </svg>
                                     </button>
                                     {menuOpen && (
-                                        <div className="absolute right-0 top-full mt-2 bg-white dark:bg-[#1f1f1f] border border-gray-100 dark:border-[#333] rounded-xl shadow-2xl overflow-hidden py-2 min-w-[200px] z-[100] animate-in fade-in zoom-in-95 duration-200" ref={menuRef}>
+                                        <div className="absolute right-0 top-full mt-2 bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-[#333] rounded-xl shadow-2xl overflow-hidden py-2 min-w-[200px] z-[100] animate-in fade-in zoom-in-95 duration-200" ref={menuRef}>
                                             <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); copyToClipboard(); setMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-[14px] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
                                                 Copy link
@@ -269,7 +271,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, currentUser, onLike, o
                                 </div>
                                 <button
                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDismissed(true); }}
-                                    className="text-gray-400 hover:text-gray-900 dark:hover:text-white p-1 transition-colors"
+                                    className="text-gray-500 hover:text-gray-900 dark:hover:text-white p-1 transition-colors"
                                     title="Dismiss"
                                 >
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -381,7 +383,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, currentUser, onLike, o
                                 </button>
 
                                 {shareOpen && (
-                                    <div className="absolute right-0 bottom-full mb-2 bg-white dark:bg-[#1f1f1f] border border-gray-100 dark:border-[#333] rounded-xl shadow-2xl p-2 min-w-[180px] z-[100] animate-in fade-in slide-in-from-bottom-2 duration-200" ref={shareRef}>
+                                    <div className="absolute right-0 bottom-full mb-2 bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-[#333] rounded-xl shadow-2xl p-2 min-w-[180px] z-[100] animate-in fade-in slide-in-from-bottom-2 duration-200" ref={shareRef}>
                                         <button onClick={() => shareOnSocial('x')} className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 rounded-lg transition-colors font-sans">
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg>
                                             Share on X

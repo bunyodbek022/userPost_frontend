@@ -28,9 +28,10 @@ api.interceptors.response.use(
         const originalRequest = error.config;
         
         const isAuthCheck = originalRequest?.url?.includes('/users/profile') || originalRequest?.url?.includes('/users/bookmarks/all');
+        const isLogin = originalRequest?.url?.includes('/auth/login');
 
         // Handle 401 Unauthorized for token refresh
-        if (error.response?.status === 401 && !originalRequest._retry && originalRequest.url !== '/auth/refresh') {
+        if (error.response?.status === 401 && !originalRequest._retry && originalRequest.url !== '/auth/refresh' && !isLogin) {
             originalRequest._retry = true;
 
             try {
@@ -48,7 +49,7 @@ api.interceptors.response.use(
             }
         }
 
-        if (error.response?.status === 401) {
+        if (error.response?.status === 401 && !isLogin) {
             if (isAuthCheck) {
                 // Suppress noise for expected auth checks on public pages
                 return Promise.reject(error);

@@ -73,7 +73,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChang
     return (
         <div className="relative">
             {/* ── Floating Toolbar ── */}
-            <div className="flex items-center gap-0.5 flex-wrap px-2 py-1.5 mb-4 rounded-xl bg-white dark:bg-[#1f1f1f] border border-gray-100 dark:border-[#2a2a2a] shadow-sm sticky top-16 z-10">
+            <div className="flex items-center gap-0.5 flex-wrap px-2 py-1.5 mb-4 rounded-xl bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-[#2a2a2a] shadow-sm sticky top-16 z-10">
                 {/* Text style */}
                 <Btn active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} title="Bold (Ctrl+B)">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

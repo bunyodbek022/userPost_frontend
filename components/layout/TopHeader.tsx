@@ -78,11 +78,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onMenuClick, currentUser, 
     };
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-[60] bg-white/95 dark:bg-[#0f0e0d]/95 backdrop-blur-md border-b border-gray-100 dark:border-[#2a2a2a] flex items-center justify-between px-4 lg:px-6 h-16 transition-colors duration-300">
+        <header className="fixed top-0 left-0 right-0 z-[60] bg-[#F9FAFB]/95 dark:bg-[#0F172A]/95 backdrop-blur-md border-b border-gray-100 dark:border-[#2a2a2a] flex items-center justify-between px-4 lg:px-6 h-16 transition-colors duration-300">
             <div className={`flex items-center gap-4 lg:gap-6 ${isSearchExpanded ? 'hidden md:flex' : 'flex'}`}>
                 <button
                     onClick={onMenuClick}
-                    className="p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-500 dark:text-gray-400"
+                    className="hidden lg:block p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-500 dark:text-gray-400"
                     title="Toggle menu"
                 >
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -98,8 +98,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onMenuClick, currentUser, 
                 {/* Desktop Search Bar */}
                 <div className="hidden md:flex items-center ml-4">
                     <div className="relative group">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 group-focus-within:text-brand-orange transition-colors">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-gray-400 group-focus-within:text-brand-orange transition-colors">
+                            <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </span>
@@ -107,7 +107,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onMenuClick, currentUser, 
                             ref={searchInputRef}
                             type="text"
                             placeholder="Search"
-                            className="w-48 lg:w-64 pl-10 pr-4 py-2 bg-gray-50 dark:bg-[#1f1f1f] border-none rounded-full text-sm focus:ring-1 focus:ring-brand-orange/30 focus:bg-white dark:focus:bg-[#252525] transition-all outline-none"
+                            className="w-56 lg:w-[320px] pl-11 pr-5 py-2.5 bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-transparent rounded-full text-[15px] focus:ring-1 focus:ring-brand-orange/30 focus:border-brand-orange/30 dark:focus:bg-[#252525] transition-all outline-none"
                             key={searchValue === '' ? 'empty' : 'valued'}
                             defaultValue={searchValue}
                             onChange={handleSearchChange}
@@ -131,7 +131,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onMenuClick, currentUser, 
                             ref={searchInputRef}
                             type="text"
                             placeholder="Search stories..."
-                            className="w-full pl-10 pr-10 py-2 bg-gray-100 dark:bg-[#1f1f1f] border-none rounded-full text-sm focus:ring-1 focus:ring-brand-orange/30 outline-none"
+                            className="w-full pl-10 pr-10 py-2 bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-transparent rounded-full text-sm focus:ring-1 focus:ring-brand-orange/30 focus:border-brand-orange/30 outline-none"
                             defaultValue={searchValue}
                             onChange={handleSearchChange}
                             onKeyDown={handleSearchKeyDown}
@@ -181,7 +181,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onMenuClick, currentUser, 
 
                 <button
                     onClick={toggleTheme}
-                    className="text-gray-600 dark:text-[#999999] hover:text-gray-900 dark:hover:text-white transition-all p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-[#1f1f1f]"
+                    className="text-gray-600 dark:text-[#999999] hover:text-gray-900 dark:hover:text-white transition-all p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-[#1E293B]"
                     title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
                 >
                     {theme === 'dark' ? (
@@ -216,7 +216,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onMenuClick, currentUser, 
                                     className="fixed inset-0 z-40" 
                                     onClick={() => setIsProfileMenuOpen(false)}
                                 ></div>
-                                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#1f1f1f] rounded-xl shadow-lg border border-gray-100 dark:border-[#2a2a2a] py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#1E293B] rounded-xl shadow-lg border border-gray-100 dark:border-[#2a2a2a] py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                                     <div className="px-4 py-2 border-b border-gray-100 dark:border-[#2a2a2a] mb-1">
                                         <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{currentUser.userName}</p>
                                         <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{currentUser.email}</p>

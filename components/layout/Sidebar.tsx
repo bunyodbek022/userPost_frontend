@@ -74,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps & { className?: string; isMobile?: b
     }
 
     return (
-        <aside className={`${className} bg-white dark:bg-[#0f0f0f] border-r border-gray-100 dark:border-[#2a2a2a] transition-all duration-300`}>
+        <aside className={`${className} bg-[#F9FAFB] dark:bg-[#0F172A] border-r border-gray-100 dark:border-[#2a2a2a] transition-all duration-300`}>
             <div className={`flex flex-col h-full py-4 ${isCollapsed ? 'px-2 items-center' : 'p-4 lg:p-6'}`}>
                 {/* Navigation */}
                 <nav className="flex-1 space-y-2 mt-4 w-full">

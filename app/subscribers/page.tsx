@@ -30,7 +30,7 @@ export default function SubscribersPage() {
                         {users.map((author: any, idx: number) => (
                             <div
                                 key={author._id}
-                                className="flex items-center justify-between gap-4 p-4 bg-white dark:bg-[#1a1a1a] border border-gray-100 dark:border-[#2a2a2a] rounded-xl hover:border-gray-200 dark:hover:border-[#404040] transition-all"
+                                className="flex items-center justify-between gap-4 p-4 bg-[#F9FAFB] dark:bg-[#1E293B] border border-gray-100 dark:border-[#2a2a2a] rounded-xl hover:border-gray-200 dark:hover:border-[#404040] transition-all"
                             >
                                 <div className="flex items-center gap-4 min-w-0">
                                     {/* Rank */}

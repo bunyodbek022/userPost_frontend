@@ -42,7 +42,7 @@ export const EditPostModal: React.FC<EditPostModalProps> = ({ post, onClose, onS
 
     return (
         <div className="fixed inset-0 bg-white/90 dark:bg-black/90 backdrop-blur-sm z-[100] flex items-center justify-center p-6 sm:p-10">
-            <div className="max-w-3xl w-full bg-white dark:bg-[#1f1f1f] shadow-2xl dark:shadow-black/50 rounded-2xl p-6 sm:p-10 border border-gray-100 dark:border-[#333333] max-h-[95vh] overflow-y-auto relative">
+            <div className="max-w-3xl w-full bg-white dark:bg-[#1E293B] shadow-2xl dark:shadow-black/50 rounded-2xl p-6 sm:p-10 border border-gray-100 dark:border-[#333333] max-h-[95vh] overflow-y-auto relative">
 
                 {/* Close Button */}
                 <button
