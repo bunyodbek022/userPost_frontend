@@ -79,6 +79,7 @@ export default function CreatePostPage() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       toast.success("Story published successfully!");
+      router.refresh();
       router.push('/feed');
     } catch (err: any) {
       console.error('Post error:', err.response?.data);
