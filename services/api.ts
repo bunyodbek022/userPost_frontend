@@ -24,8 +24,27 @@ api.interceptors.response.use(
         console.log(`[API RESPONSE] ${response.status} ${response.config.url}`);
         return response;
     },
-    (error) => {
-        const isAuthCheck = error.config?.url?.includes('/users/profile') || error.config?.url?.includes('/users/bookmarks/all');
+    async (error) => {
+        const originalRequest = error.config;
+        
+        const isAuthCheck = originalRequest?.url?.includes('/users/profile') || originalRequest?.url?.includes('/users/bookmarks/all');
+
+        // Handle 401 Unauthorized for token refresh
+        if (error.response?.status === 401 && !originalRequest._retry && originalRequest.url !== '/auth/refresh') {
+            originalRequest._retry = true;
+
+            try {
+                // Try to refresh token
+                await api.post('/auth/refresh');
+                
+                // If successful, retry the original request
+                return api(originalRequest);
+            } catch (refreshError) {
+                // If refresh fails (e.g. refresh token expired), it will just reject and UI handles it (e.g. redirect to login)
+                return Promise.reject(refreshError);
+            }
+        }
+
         if (error.response?.status === 401 && isAuthCheck) {
             // Suppress noise for expected auth checks
             return Promise.reject(error);
