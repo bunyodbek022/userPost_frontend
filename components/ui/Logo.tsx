@@ -6,6 +6,7 @@ interface LogoProps {
     showText?: boolean;
 }
 
+
 export const Logo: React.FC<LogoProps> = ({ className = '', size = 'md', showText = true }) => {
     const sizeClasses = {
         sm: 'text-2xl',
