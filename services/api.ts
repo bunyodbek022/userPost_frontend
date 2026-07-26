@@ -40,14 +40,23 @@ api.interceptors.response.use(
                 // If successful, retry the original request
                 return api(originalRequest);
             } catch (refreshError) {
-                // If refresh fails (e.g. refresh token expired), it will just reject and UI handles it (e.g. redirect to login)
+                // If refresh fails, redirect to login
+                if (typeof window !== 'undefined' && !isAuthCheck) {
+                    window.location.href = '/login';
+                }
                 return Promise.reject(refreshError);
             }
         }
 
-        if (error.response?.status === 401 && isAuthCheck) {
-            // Suppress noise for expected auth checks
-            return Promise.reject(error);
+        if (error.response?.status === 401) {
+            if (isAuthCheck) {
+                // Suppress noise for expected auth checks on public pages
+                return Promise.reject(error);
+            }
+            // If it's a 401 and we didn't intercept it for refresh (or refresh already tried)
+            if (typeof window !== 'undefined') {
+                window.location.href = '/login';
+            }
         }
 
         console.error(`[API ERROR] ${error.response?.status} ${error.config?.url}`, error.response?.data || error.message);
